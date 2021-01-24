@@ -306,6 +306,20 @@ body {
     background-color: #e9f1ff;
     cursor: pointer;
   }
+  .red, .red-hoverable {
+    background-color: #ffd4d4;
+  }
+  .red-hoverable:hover {
+    background-color: #ffe9e9;
+    cursor: pointer;
+  }
+  .grey, .grey-hoverable {
+    background-color: #bdbdbd;
+  }
+  .grey-hoverable:hover {
+    background-color: #e0e0e0;
+    cursor: pointer;
+  }
   .options {
     padding: 15px;
     margin-bottom: 5px;

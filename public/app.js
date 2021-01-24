@@ -12,42 +12,24 @@ $(function() { // Module Format
      */
     bindEvents : function() {
       IO.socket.on('connected', IO.onConnected);
-      IO.socket.on('startDebug', IO.startDebugResponse);
-      IO.socket.on('newLandingQuestionResponse', IO.newLandingQuestionResponse);
-      IO.socket.on('newDebugQuestionResponse', IO.newDebugQuestionResponse);
+      IO.socket.on('newQuestionResponse', IO.newQuestionResponse);
     },
     /**
      * Function called when server confirms connection
      */
-    onConnected : function() {
-      const mode_cookie = Cookies.getCookie('mode')
-      if(mode_cookie==""){
-        mode_cookie = "landing"
-        Cookies.setCookie('mode','landing',1/(24*12))
-      }
-      console.log(mode_cookie)
-      IO.socket.emit('handleLanding',{'mode':mode_cookie})
-    }, /**
-     * 
-     * @param data templateLoaded, topic, question
-     */
-    startDebugResponse : function(data) {
-      Cookies.setCookie('mode','debug',1/(24*12))
-      if(!data.templateLoaded){
-        App.$gameArea.html(App.$templateDebug)
-      }
-      App.Debug.displayQuestion(data.question)
+    onConnected : function(data) {
+      App.user = data.address
     },
-    newDebugQuestionResponse : function(data) {
-      App.Debug.displayQuestion(data.question)
-    },
-    newLandingQuestionResponse : function(data) {
-      App.Landing.displayQuestion(data.question)
+    newQuestionResponse : function(data) {
+      App.displayQuestion(data.question)
     }
   }
   var App = {
     gameCode: '', // App.gameCode type variables
     question_id: -1,
+    guess: -1,
+    user: 'unknown',
+    feedback: 'none',
     init: function () {
         App.cacheElements();
         App.showInitScreen();
@@ -68,30 +50,135 @@ $(function() { // Module Format
         App.$templateJoin = $('#template-join').html();
         App.$templateDebug = $('#template-debug').html();
     },
+    /**
+     * Client-side startup
+     */
     showInitScreen: function(){
-      App.$gameArea.html(App.$templateLanding);
+      const mode = Cookies.getMode();
+      switch(mode){
+        case 'landing':
+          App.$gameArea.html(App.$templateLanding);
+          break;
+        case 'debug':
+          App.$gameArea.html(App.$templateDebug);
+          break;
+      }
+      IO.socket.emit('handleLanding',{'mode':mode})
     },
+    /**
+     * Return to home screen. Usually called by clicking the banner
+     */
     goLanding: function(){
-      Cookies.setCookie('mode','landing');
-      App.Landing.newLandingQuestion();
-      App.$gameArea.html(App.$templateLanding);
+      if(Cookies.getMode() != 'landing'){
+        Cookies.setCookie('mode','landing');
+        App.showInitScreen();
+      }
     },
+    /**
+     * Bind events, such as clicking on objects, with js function calls
+     */
     bindEvents: function () {
       // General 
       App.$doc.on('click', '#title-container', App.goLanding);
-      // Landing Page
+      App.$doc.on('click', '#new-question', App.newQuestion);
+      App.$doc.on('click', '#like-button', App.like);
+      App.$doc.on('click', '#dislike-button', App.dislike);
+      App.$doc.on('click', '#report-button', App.report);
+      // Landing Page 
       App.$doc.on('click', '#show-rules-button', App.Landing.showRules);
       App.$doc.on('click', '#public-game-button', App.Landing.goPublic);
       App.$doc.on('click', '#host-game-button', App.Landing.hostGameMenu);
       App.$doc.on('click', '#join-game-button', App.Landing.joinGameMenu);
       App.$doc.on('click', '#debug-mode-button', App.Landing.goDebug);
       App.$doc.on('click', '#fade-background', App.Landing.removeFade);
-      App.$doc.on('click', '#new-question', App.Landing.newLandingQuestion);
+      /*
+      $("#guess-input").keyup(function(event){
+        if (event.keyCode === 13) {
+          $("#guess").click();
+        }
+      });
+      */
       // Debug Page
-      App.$doc.on('click', '#like-button', App.Debug.like);
-      App.$doc.on('click', '#dislike-button', App.Debug.dislike);
-      App.$doc.on('click', '#report-button', App.Debug.report);
-      App.$doc.on('click', '#next-button', App.Debug.next);
+    },
+    // General Functions called by multiple modes
+    /**
+     * Ask server for new question, will return with newQuestionResponse, will also give feedback if not the first question
+     * @param {boolean} first true if this is the first question loaded on the page, and so will not submit feedback
+     */
+    newQuestion : function(first=false){
+      if(!first){
+        Helper.clearFeedbackButtons()
+        App.submitFeedback()
+      }
+      App.guess = -1;
+      App.feedback = 'none';
+      Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
+      IO.socket.emit('newQuestion');
+    },
+    /**
+     * Called by IO.newQuestionResponse()
+     * @param {*} question 
+     */
+    displayQuestion : function(question){
+      App.question_id = question._id
+      switch(Cookies.getMode()){
+        case 'landing':
+          $('#question-text').html(question.question + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+          break;
+        case 'debug':
+          $('#question-text').html(question.question.replace('???', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+          break;
+      }
+    },
+    like : function(question){
+      if(App.feedback != 'like'){
+        App.feedback = 'like'
+        Helper.changeButtonColor($('#like-button'),'green')
+        Helper.changeButtonColor($('#dislike-button'),'blue')
+        Helper.changeButtonColor($('#report-button'),'blue')
+      }else{
+        Helper.clearFeedbackButtons()
+      }
+      if(Cookies.getMode() == 'debug'){
+        App.newQuestion()
+      }
+    },
+    dislike : function(question){
+      if(App.feedback != 'dislike'){
+        App.feedback = 'dislike'
+        Helper.changeButtonColor($('#like-button'),'blue')
+        Helper.changeButtonColor($('#dislike-button'),'red')
+        Helper.changeButtonColor($('#report-button'),'blue')
+      }else{
+        Helper.clearFeedbackButtons()
+      }
+      if(Cookies.getMode() == 'debug'){
+        App.newQuestion()
+      }
+    },
+    report : function(question){
+      if(App.feedback != 'report'){
+        App.feedback = 'report'
+        Helper.changeButtonColor($('#like-button'),'blue')
+        Helper.changeButtonColor($('#dislike-button'),'blue')
+        Helper.changeButtonColor($('#report-button'),'grey')
+      }else{
+        Helper.clearFeedbackButtons()
+      }
+      if(Cookies.getMode() == 'debug'){
+        App.newQuestion()
+      }
+    },
+    /**
+     * Function called by buttons to submit feedback, pulled from App.feedback
+     */
+    submitFeedback(){
+      IO.socket.emit('submitFeedback',{ 'question_id':App.question_id,
+                                      'user':App.user,
+                                      'mode':Cookies.getMode(),
+                                      'guess':App.guess,
+                                      'feedback':App.feedback
+                                    });
     },
     // Client-side functions called from landing (mostly bound to buttons)
     Landing : {
@@ -109,40 +196,13 @@ $(function() { // Module Format
       },
       goDebug : function(){
         App.$gameArea.html(App.$templateDebug)
-        IO.socket.emit('goDebug')
+        Cookies.setCookie('mode','debug',10/(24*60))
+        App.newQuestion(first=true)
       },
       removeFade : function(e){
         if (e.target == this){
           App.$gameCover.html('');
         }
-      },
-      /**
-       * Ask server for new landing question, will respond with 'newLandingQuestionResponse'
-       */
-      newLandingQuestion : function(){
-        IO.socket.emit('newLandingQuestion')
-      },
-      like : function(){
-        
-      },
-      dislike : function(){
-        
-      },
-      report : function(){
-
-      },
-      displayQuestion : function(question){
-        App.question_id = question._id
-        $('#question-text').html(question.question + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
-      },
-      feedbackAndQuestion(question_id, user, guess, feedback){
-        IO.socket.emit('giveFeedback',{ 'question_id':question_id,
-                                        'user':user,
-                                        'mode':'landing',
-                                        'guess':guess,
-                                        'feedback':feedback
-                                      })
-        IO.socket.emit('newLandingQuestion')
       },
       showAnswer : function(question){
         $('#question-text').html(question.question.replace('[???]', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
@@ -150,39 +210,7 @@ $(function() { // Module Format
     },
     // Debug Mode Functions
     Debug : {
-      /**
-       * display a Question on the debug screen, particularly substitute in the plain_answer
-       * @param {*} question json question from database
-       */
-      displayQuestion : function(question){
-        App.question_id = question._id
-        $('#question-text').html(question.question.replace('???', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
-      },
-      like : function(question){
-        App.Debug.feedbackAndQuestion('like')
-      },
-      dislike : function(question){
-        App.Debug.feedbackAndQuestion('dislike')
-      },
-      report : function(question){
-        App.Debug.feedbackAndQuestion('report')
-      },
-      next : function(question){
-        App.Debug.feedbackAndQuestion('next')
-      },
-      /**
-       * Function ultimately called by buttons to give feedback and get new question
-       * @param {string} feedback (Ex: like/dislike)
-       */
-      feedbackAndQuestion(feedback){
-        IO.socket.emit('giveFeedback',{ 'question_id':App.question_id,
-                                        'user':'MAX',
-                                        'mode':'debug',
-                                        'guess':-1,
-                                        'feedback':feedback
-                                      })
-        IO.socket.emit('newDebugQuestion')
-      }
+      
     }
   }
   var Cookies = {
@@ -216,6 +244,50 @@ $(function() { // Module Format
         }
       }
       return "";
+    },
+    /**
+     * Get the current mode of the site, will be landing by default, and refresh the landing cookie (mode cookie lasts 5 minutes)
+     */
+    getMode : function() {
+      var mode = Cookies.getCookie('mode')
+      if(mode == ""){
+        mode = "landing"
+        Cookies.setCookie('mode','landing',1/(24*12))
+      }
+      return mode
+    }
+  }
+  var Helper = {
+    /**
+     * Change color of a Button jQuery element by switching the class
+     * @param {Object} element Button jQuery element
+     * @param {string} color string with color name (blue, green, red, grey)
+     */
+    changeButtonColor : function(element, color){
+      element.removeClass('blue-hoverable')
+      element.removeClass('green-hoverable')
+      element.removeClass('red-hoverable')
+      element.removeClass('grey-hoverable')
+      switch(color){
+        case 'blue':
+          element.addClass('blue-hoverable')
+          break;
+        case 'green':
+          element.addClass('green-hoverable')
+          break;
+        case 'red':
+          element.addClass('red-hoverable')
+          break;
+        case 'grey':
+          element.addClass('grey-hoverable')
+          break;
+      }
+    },
+    clearFeedbackButtons : function(){
+      App.feedback = 'none'
+      Helper.changeButtonColor($('#like-button'),'blue')
+      Helper.changeButtonColor($('#dislike-button'),'blue')
+      Helper.changeButtonColor($('#report-button'),'blue')
     }
   }
   IO.init();

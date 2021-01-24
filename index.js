@@ -33,7 +33,7 @@ var io = require('socket.io').listen(server);
 // Listen for Socket.IO Connections. Once connected, then start the game logic.
 io.sockets.on('connection', function (socket) {
     //console.log('client connected');
-    wiki.initGame(io, socket, app);
+    wiki.initGame(io, socket,socket.handshake.address);
 });
 
 

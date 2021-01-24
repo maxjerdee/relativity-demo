@@ -33,19 +33,16 @@ main().catch(console.error) // Unsure what this is about tbh
  * @param sio The Socket.IO library
  * @param socket The socket object for the connected client.
  */
-exports.initGame = function(sio, socket){
+exports.initGame = function(sio, socket, address){
   // Saves the Socket.IO arguments to the global variables
   io = sio; 
   gameSocket = socket;
-  gameSocket.emit('connected'); // Tell client server is live
+  gameSocket.emit('connected', {'address': address}); // Tell client server is live
   // General Events (API)
   gameSocket.on('getQuestion', getQuestion);
-  gameSocket.on('giveFeedback', giveFeedback);
-  // Landing Events
-  gameSocket.on('newLandingQuestion',newLandingQuestion);
+  gameSocket.on('submitFeedback', submitFeedback);
+  gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
   // Debug Events
-  gameSocket.on('goDebug',goDebugResponse);
-  gameSocket.on('newDebugQuestion',newDebugQuestionResponse);
   // Routing
   gameSocket.on('handleLanding',handleLanding)
 }
@@ -82,12 +79,16 @@ interactions:"[]"
   }
   return result
 }
-
+/* GENERAL FUNCTIONS */
+async function newQuestion(){
+  const question = await returnQuestion();
+  await gameSocket.emit('newQuestionResponse',{'question': question})
+}
 /**
  * Function to call when writing feedback to the database
  * @param data contains question_id,user,mode,guess,feedback 
  */
-async function giveFeedback(data){
+async function submitFeedback(data){
   try {
     await client.db("wiki-guess").collection("questions").updateOne(
       { _id: data.question_id },
@@ -108,45 +109,18 @@ async function giveFeedback(data){
   }
 }
 // DEBUG MODE
-/**
- * Function called by client "Debug Mode" button
- * @param {*} data Socket IO json
- */
-async function goDebugResponse(data){
-  await startDebug(templateLoaded=true)
-}
-/**
- * Function called by client "Debug Mode" button
- * @param {*} data Socket IO json
- */
-async function newDebugQuestionResponse(data){
-  const question = await returnQuestion();
-  await gameSocket.emit('newDebugQuestionResponse',{'question':question})
-}
-/**
- * Server-side function called to populate the debug page
- * @param {boolean} templateLoaded true if the debug template has already been loaded client-side (so don't load it again)
- */
-async function startDebug(templateLoaded=false){
-  const question = await returnQuestion();
-  await gameSocket.emit('startDebug',{'templateLoaded':templateLoaded, 'topic':null, 'question': question})
-}
-async function newLandingQuestion(){
-  const question = await returnQuestion();
-  await gameSocket.emit('newLandingQuestionResponse',{'question': question})
-}
+
 // ROUTING
 /**
- * 
+ * Do server-side tasks that must be done when a new user joins (including other modes in case of refresh)
  * @param data Socket.IO json with mode, user_id 
  */
 async function handleLanding(data){
+  console.log(data.mode)
   switch(data.mode){
     case 'landing':
-      await newLandingQuestion()
-      break;
     case 'debug':
-      await startDebug(templateLoaded=false)
+      await newQuestion()
       break;
   }
 }
