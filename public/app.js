@@ -124,8 +124,14 @@ $(function() { // Module Format
       }
       $('#guess-button').show();
       $('#score').hide();
-      $('#feedback-row').hide();
-      $('#feedback-row').children().hide();
+      switch(Cookies.getMode()){
+        case 'landing':
+          $('#feedback-row').hide();
+          $('#feedback-row').children().hide();
+          break;
+        case 'debug':
+          break;
+      }
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie

@@ -90,12 +90,14 @@ async function newQuestion(){
  */
 async function submitFeedback(data){
   try {
+    var msec = Date.now();
+    var date = new Date(msec);
     await client.db("wiki-guess").collection("questions").updateOne(
       { _id: data.question_id },
       {
         $push: {
           interactions: { 'user':data.user,
-                          'date': Date.now(),
+                          'date': date,
                           'mode':data.mode,
                           'guess':data.guess,
                           'feedback':data.feedback
