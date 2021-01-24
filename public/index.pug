@@ -85,7 +85,7 @@ block content
                   .col-sm-6.text-right
                     p.question-header#topic T: 1
                 p#question-text Loading Question...
-                .row 
+                .row#feedback-row 
                   .col-sm-3
                     .button.blue-hoverable#like-button
                       p.button-text Like
@@ -224,18 +224,29 @@ block content
               .col#random-question-text-col
                 p.section-header Random Question:
               .col#new-question-col
-                .new-question
+                .new-question.text-right
                   .button-wrapper
                     .button.blue-hoverable#new-question
                       p.button-text New Question
             p#question-text Loading Question...
-            .row#bottom-row
-              .col#guess-text-col
-                p.input-label Guess: 
+            .row#guess-row
+              .col#guess-text-col.l-370
+                p.input-label.l-370 Guess: 
               .col#input-col
                 input#guess-input(type="number")
-              .col#show-answer-col
-                .button.blue-hoverable#show-answer
-                  p.button-text Show Answer
-                p#answer 
+              .col#units-col
+                p (million)
+              .col#show-answer-col.text-right
+                .button.blue-hoverable#guess-button
+                  p.button-text.l-650 Show Answer
+                  p.button-text.s-650 Answer
+                p.input-label#score 
+            .row#feedback-row.text-center
+              #feedback-wrapper
+                .button.blue-hoverable#like-button
+                  p.button-text Like
+                .button.blue-hoverable#dislike-button
+                  p.button-text Dislike
+                .button.blue-hoverable#report-button
+                  p.button-text Report
 

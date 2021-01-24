@@ -13,6 +13,7 @@ $(function() { // Module Format
     bindEvents : function() {
       IO.socket.on('connected', IO.onConnected);
       IO.socket.on('newQuestionResponse', IO.newQuestionResponse);
+      IO.socket.on('submitAnswerResponse', IO.submitAnswerResponse);
     },
     /**
      * Function called when server confirms connection
@@ -22,6 +23,13 @@ $(function() { // Module Format
     },
     newQuestionResponse : function(data) {
       App.displayQuestion(data.question)
+    },
+    submitAnswerResponse : function(data) {
+      const question = data.question;
+      $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+      $('#guess-button').hide();
+      $('#score').html('Score: '+data.score);
+      $('#score').show();
     }
   }
   var App = {
@@ -84,6 +92,7 @@ $(function() { // Module Format
       App.$doc.on('click', '#like-button', App.like);
       App.$doc.on('click', '#dislike-button', App.dislike);
       App.$doc.on('click', '#report-button', App.report);
+      App.$doc.on('click', '#guess-button', App.submitAnswer);
       // Landing Page 
       App.$doc.on('click', '#show-rules-button', App.Landing.showRules);
       App.$doc.on('click', '#public-game-button', App.Landing.goPublic);
@@ -91,13 +100,11 @@ $(function() { // Module Format
       App.$doc.on('click', '#join-game-button', App.Landing.joinGameMenu);
       App.$doc.on('click', '#debug-mode-button', App.Landing.goDebug);
       App.$doc.on('click', '#fade-background', App.Landing.removeFade);
-      /*
       $("#guess-input").keyup(function(event){
         if (event.keyCode === 13) {
-          $("#guess").click();
+          App.submitAnswer();
         }
       });
-      */
       // Debug Page
     },
     // General Functions called by multiple modes
@@ -110,6 +117,10 @@ $(function() { // Module Format
         App.submitFeedback()
         Helper.clearFeedbackButtons()
       }
+      $('#guess-button').show();
+      $('#score').hide();
+      $('#feedback-row').hide()
+      $('#feedback-row').children().hide()
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
@@ -121,13 +132,21 @@ $(function() { // Module Format
      */
     displayQuestion : function(question){
       App.question_id = question._id
+      $('#guess-input').val('');
       switch(Cookies.getMode()){
         case 'landing':
-          $('#question-text').html(question.question + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+          $('#question-text').html(question.question + ' (<i>' + question.title + '</i>)')
           break;
         case 'debug':
           $('#question-text').html(question.question.replace('???', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
           break;
+      }
+      if(question.num_answer < 1000000){ // Display the unit millions if the answer is >=1000000
+        $('#units-col').hide()
+        $('#units-col').children().hide()
+      }else{
+        $('#units-col').show()
+        $('#units-col').children().show()
       }
     },
     like : function(question){
@@ -170,6 +189,16 @@ $(function() { // Module Format
       }
     },
     /**
+     * Guess answer to the current question
+     */
+    submitAnswer(){
+      App.guess = $('#guess-input').val()
+      IO.socket.emit('submitAnswer',{
+                                      'question_id': App.question_id,
+                                      'guess': App.guess
+                                    });
+    },
+    /**
      * Function called by buttons to submit feedback, pulled from App.feedback
      */
     submitFeedback(){
@@ -203,9 +232,6 @@ $(function() { // Module Format
         if (e.target == this){
           App.$gameCover.html('');
         }
-      },
-      showAnswer : function(question){
-        $('#question-text').html(question.question.replace('[???]', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
       }
     },
     // Debug Mode Functions

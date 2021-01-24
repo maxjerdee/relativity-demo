@@ -58,7 +58,6 @@ body {
       }
         .button {
           display: inline-block;
-          position: absolute;
           right: 0;
           padding: 3px 6px;
           border-style: solid;
@@ -130,7 +129,7 @@ body {
     }
     #guess-text-col {
       padding-right : 0px;
-      max-width : 80px;
+      max-width : 77px;
     }
     .input-label {
       font-family: 'JosefinSans'; font-size: 20px;
@@ -139,6 +138,11 @@ body {
     }
     #input-col {
       padding-left: 0px;
+      padding-right: 0px;
+    }
+    #units-col {
+      padding-left: 5px;
+      flex-grow: 0.5 !important;
     }
     #guess-input {
       line-height: 26px;
@@ -164,6 +168,14 @@ body {
         margin-right: 15px;
         font-family: 'JosefinSans'; font-size: 20px;
         line-height: 1.5em;
+      }
+    #feedback-row {
+      margin-top : 15px;
+      justify-content: center;
+    }
+      #like-button, #dislike-button, #report-button {
+        margin-left : 10px;
+        margin-right : 10px;
       }
 #fade-background{
   position:absolute;
@@ -333,6 +345,32 @@ body {
   }
   #question-content{
     padding: 15px;
+  }
+  /* SIZE CHANGES */
+  .l-650, .l-370{
+    display:inline-block;
+  }
+  .s-650, .s-370{
+    display:none;
+  }
+  @media screen and (max-width: 650px) {
+    .l-650{
+       display:none;
+    }
+    .s-650{
+       display:inline-block;
+    }
+  }
+  @media screen and (max-width: 370px) {
+    #input-col{
+      margin-left:15px;
+    }
+    .l-370{
+       display:none;
+    }
+    .s-370{
+       display:inline-block;
+    }
   }
   @media screen and (max-width: 850px) {
     #full-content{

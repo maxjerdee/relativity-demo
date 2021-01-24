@@ -39,9 +39,9 @@ exports.initGame = function(sio, socket, address){
   gameSocket = socket;
   gameSocket.emit('connected', {'address': address}); // Tell client server is live
   // General Events (API)
-  gameSocket.on('getQuestion', getQuestion);
   gameSocket.on('submitFeedback', submitFeedback);
   gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
+  gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
   // Debug Events
   // Routing
   gameSocket.on('handleLanding',handleLanding)
@@ -52,10 +52,16 @@ exports.initGame = function(sio, socket, address){
 /**
  * @returns Random question drawn from database
  */
-async function getQuestion(){
-  await gameSocket.emit('getQuestionResponse',{'question':returnQuestion()})
+async function getQuestionById(question_id){
+  var result = {}
+  try {
+    result = await client.db("wiki-guess").collection("questions").findOne({ _id: question_id });
+  }catch (error) {
+    console.error(error);
+  }
+  return result
 }
-async function returnQuestion(){
+async function randomQuestion(){
   /** Sample Question:
    * _id:45
 question_uuid:"5858d9d2-5179-4ad3-993c-8c0f09cd8bc1"
@@ -71,17 +77,11 @@ interactions:"[]"
    */
   const NUM_QUESTIONS = 100000
   var question_id = Math.floor(Math.random()*NUM_QUESTIONS);
-  var result = {}
-  try {
-    result = await client.db("wiki-guess").collection("questions").findOne({ _id: question_id });
-  }catch (error) {
-    console.error(error);
-  }
-  return result
+  return await getQuestionById(question_id)
 }
 /* GENERAL FUNCTIONS */
 async function newQuestion(){
-  const question = await returnQuestion();
+  const question = await randomQuestion();
   await gameSocket.emit('newQuestionResponse',{'question': question})
 }
 /**
@@ -107,6 +107,15 @@ async function submitFeedback(data){
   }catch(e){
     console.log(e);
   }
+}
+async function submitAnswer(data){
+  const question = await getQuestionById(data.question_id);
+  var ratio = data.guess/question.num_answer;
+  if(ratio <= 0){
+    ratio = 100;
+  }
+  const score = Math.round(Math.max(100 - 100*Math.abs(Math.log10(ratio)),0));
+  gameSocket.emit('submitAnswerResponse',{'question': question, 'score': score})
 }
 // DEBUG MODE
 
