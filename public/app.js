@@ -107,8 +107,8 @@ $(function() { // Module Format
      */
     newQuestion : function(first=false){
       if(!first){
-        Helper.clearFeedbackButtons()
         App.submitFeedback()
+        Helper.clearFeedbackButtons()
       }
       App.guess = -1;
       App.feedback = 'none';
