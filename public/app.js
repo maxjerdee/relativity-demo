@@ -66,12 +66,14 @@ $(function() { // Module Format
       switch(mode){
         case 'landing':
           App.$gameArea.html(App.$templateLanding);
+          App.newQuestion(true)
           break;
         case 'debug':
           App.$gameArea.html(App.$templateDebug);
+          App.newQuestion(true)
           break;
       }
-      IO.socket.emit('handleLanding',{'mode':mode})
+      IO.socket.emit('handleLanding',{'mode':mode}) // Server-side startup
     },
     /**
      * Return to home screen. Usually called by clicking the banner
@@ -88,7 +90,7 @@ $(function() { // Module Format
     bindEvents: function () {
       // General 
       App.$doc.on('click', '#title-container', App.goLanding);
-      App.$doc.on('click', '#new-question', App.newQuestion);
+      App.$doc.on('click', '#new-question', App.newQuestionWrapper);
       App.$doc.on('click', '#like-button', App.like);
       App.$doc.on('click', '#dislike-button', App.dislike);
       App.$doc.on('click', '#report-button', App.report);
@@ -108,19 +110,22 @@ $(function() { // Module Format
       // Debug Page
     },
     // General Functions called by multiple modes
+    newQuestionWrapper : function(){
+      App.newQuestion()
+    },
     /**
      * Ask server for new question, will return with newQuestionResponse, will also give feedback if not the first question
      * @param {boolean} first true if this is the first question loaded on the page, and so will not submit feedback
      */
-    newQuestion : function(first=false){
+    newQuestion : function(first = false){
       if(!first){
         App.submitFeedback()
         Helper.clearFeedbackButtons()
       }
       $('#guess-button').show();
       $('#score').hide();
-      $('#feedback-row').hide()
-      $('#feedback-row').children().hide()
+      $('#feedback-row').hide();
+      $('#feedback-row').children().hide();
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
@@ -141,12 +146,12 @@ $(function() { // Module Format
           $('#question-text').html(question.question.replace('???', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
           break;
       }
-      if(question.num_answer < 1000000){ // Display the unit millions if the answer is >=1000000
-        $('#units-col').hide()
-        $('#units-col').children().hide()
-      }else{
+      if(question.num_answer >= 10**6){ // Display the unit millions if the answer is >=1000000
         $('#units-col').show()
         $('#units-col').children().show()
+      }else{
+        $('#units-col').hide()
+        $('#units-col').children().hide()
       }
     },
     like : function(question){
@@ -192,6 +197,8 @@ $(function() { // Module Format
      * Guess answer to the current question
      */
     submitAnswer(){
+      $('#feedback-row').show()
+      $('#feedback-row').children().show()
       App.guess = $('#guess-input').val()
       IO.socket.emit('submitAnswer',{
                                       'question_id': App.question_id,
@@ -202,12 +209,15 @@ $(function() { // Module Format
      * Function called by buttons to submit feedback, pulled from App.feedback
      */
     submitFeedback(){
-      IO.socket.emit('submitFeedback',{ 'question_id':App.question_id,
-                                      'user':App.user,
-                                      'mode':Cookies.getMode(),
-                                      'guess':App.guess,
-                                      'feedback':App.feedback
-                                    });
+      const feedback = { 
+                        'question_id':App.question_id,
+                        'user':App.user,
+                        'mode':Cookies.getMode(),
+                        'guess':App.guess,
+                        'feedback':App.feedback
+                        };
+      console.log(feedback)
+      IO.socket.emit('submitFeedback',feedback);
     },
     // Client-side functions called from landing (mostly bound to buttons)
     Landing : {

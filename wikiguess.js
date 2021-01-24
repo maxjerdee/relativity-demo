@@ -110,9 +110,13 @@ async function submitFeedback(data){
 }
 async function submitAnswer(data){
   const question = await getQuestionById(data.question_id);
+  var guess = data.guess;
+  if(question.num_answer >= 10**6){ // given unit was millions
+    guess = guess * 10**6;
+  }
   var ratio = data.guess/question.num_answer;
   if(ratio <= 0){
-    ratio = 100;
+    ratio = 10**3;
   }
   const score = Math.round(Math.max(100 - 100*Math.abs(Math.log10(ratio)),0));
   gameSocket.emit('submitAnswerResponse',{'question': question, 'score': score})
@@ -128,7 +132,6 @@ async function handleLanding(data){
   switch(data.mode){
     case 'landing':
     case 'debug':
-      await newQuestion()
       break;
   }
 }

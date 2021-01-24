@@ -300,37 +300,39 @@ body {
   .orange, .orange-hoverable {
     background-color: #FFE8BA;
   }
-  .orange-hoverable:hover {
-    background-color: #fdf0d6;
-    cursor: pointer;
-  }
   .green, .green-hoverable {
     background-color: #DDFADC;
-  }
-  .green-hoverable:hover {
-    background-color: #f0fff0;
-    cursor: pointer;
   }
   .blue, .blue-hoverable {
     background-color: #D4E3FF;
   }
-  .blue-hoverable:hover {
-    background-color: #e9f1ff;
-    cursor: pointer;
-  }
   .red, .red-hoverable {
     background-color: #ffd4d4;
-  }
-  .red-hoverable:hover {
-    background-color: #ffe9e9;
-    cursor: pointer;
   }
   .grey, .grey-hoverable {
     background-color: #bdbdbd;
   }
-  .grey-hoverable:hover {
-    background-color: #e0e0e0;
-    cursor: pointer;
+  @media (hover: hover) {
+    .orange-hoverable:hover {
+      background-color: #fdf0d6;
+      cursor: pointer;
+    }
+    .green-hoverable:hover {
+      background-color: #f0fff0;
+      cursor: pointer;
+    }
+    .blue-hoverable:hover {
+      background-color: #e9f1ff;
+      cursor: pointer;
+    }
+    .red-hoverable:hover {
+      background-color: #ffe9e9;
+      cursor: pointer;
+    }
+    .grey-hoverable:hover {
+      background-color: #e0e0e0;
+      cursor: pointer;
+    }
   }
   .options {
     padding: 15px;
