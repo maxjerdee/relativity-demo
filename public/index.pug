@@ -1,0 +1,241 @@
+extends layout
+
+mixin junk
+  p Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec mattis libero dui, non blandit risus volutpat tincidunt. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Praesent vel nibh maximus diam lobortis congue. Duis sem risus, tempus a nunc vel, porta egestas lorem. Sed molestie dolor a consectetur fermentum. Praesent fermentum risus bibendum eros tempor, vel scelerisque tortor gravida. Cras pellentesque lacinia volutpat. Proin in suscipit arcu. Cras blandit justo eget erat ultrices, luctus suscipit odio mattis. Aenean egestas, sapien at tincidunt tempus, tortor mauris molestie augue, quis pharetra orci mi sed sapien. Proin ac ex consectetur, placerat massa eget, viverra est. Cras malesuada tempor quam vitae consectetur. Quisque sollicitudin in ipsum et efficitur. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed quis tincidunt felis.
+
+mixin sm-junk
+  p Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec mattis libero dui, non blandit risus volutpat tincidunt. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Praesent vel nibh maximus diam lobortis congue. Duis sem risus, tempus a nunc vel, porta egestas lorem. Sed molestie dolor a consectetur fermentum. 
+
+block content
+  #gameArea
+  #gameCover
+
+  script#template-game(type="text/template")
+    .body-container
+      .title-container#title-container
+        img.title-background(src='/images/BackdropColor.svg')
+      .content-container
+        .row
+          .col-sm-5.p-3#player-container
+            .row
+              .col-sm-4
+                p#player-header Players:
+              .col-sm-8.text-right.align-text-bottom
+                p#room-code Room: ABCD
+            .hl
+            #player-list.row
+              .player-wrapper.col-6
+                .player.green
+                  .player-top.row
+                    .col-8.p-0
+                      p.player-name Maximilian Jerdee
+                    .text-right.col-4.p-0
+                      p.player-score 2800
+                  .row.player-bottom
+                    .col-8.p-0.status-wrapper
+                      .player-hl
+                      .player-status 45,000
+                    .col-4.p-0.text-right
+                      p +46
+              .player-wrapper.col-6
+                .player.green
+              .player-wrapper.col-6
+                .player.green
+              .player-wrapper.col-6
+                .player.green
+              .player-wrapper.col-6
+                .player.green
+                //- Player Score Boxes added/updated by the js
+                  .player-wrapper.col-6
+                    .player
+                      .player-top.row.m-0
+                        .col-8.p-0
+                          p.player-name Max
+                        .text-right.col-4.p-0
+                          p.player-score 280
+                      .row.player-bottom.m-0
+                        .col-7.p-0
+                          .player-status.text-center 45,000
+                        .col-2.p-0
+                          img.img-fluid(src='images/clock.png')
+                        .col-3.p-0
+                          p \+46
+                  .player-wrapper.col-6
+                    .player
+                  .player-wrapper.col-6
+                    .player
+                  .player-wrapper.col-6
+                    .player
+          .col-sm-7.p-3
+            #question-header
+            #question-wrapper
+
+  script#template-debug(type="text/template")
+    .body-container
+        .title-container#title-container
+          img.title-background(src='/images/BackdropColor.svg')
+        .content-container
+          .row
+            .col-sm-5.p-3#debug-menu
+            .col-sm-7.p-3#debug-questions
+              .random-question.blue
+                .row
+                  .col-sm-6
+                    p.question-header#question-number Q: 1
+                  .col-sm-6.text-right
+                    p.question-header#topic T: 1
+                p#question-text Loading Question...
+                .row 
+                  .col-sm-3
+                    .button.blue-hoverable#like-button
+                      p.button-text Like
+                  .col-sm-3
+                    .button.blue-hoverable#dislike-button
+                      p.button-text Dislike
+                  .col-sm-3
+                    .button.blue-hoverable#report-button
+                      p.button-text Report
+                  .col-sm-3
+                    .button.blue-hoverable#next-button
+                      p.button-text Next
+
+  script#template-guessing(type="text/template")
+    .random-question.blue
+      .row
+        .col-sm-6
+          p.question-header#question-number Q: 1/15
+        .col-sm-6.text-right
+          p.question-header#timer Time: 
+      p#question-text
+      .row
+        .col-sm-8
+          input#guess-input(type="number")
+        .col-sm-4
+          .button.blue-hoverable#guess
+            p.button-text Guess
+
+  script#game-over(type="text/template")
+    .random-question.blue
+      p.question-header Game Over
+      .button#play-again
+        p.button-text Play Again
+
+  script#template-choosing(type="text/template")
+    .orange.col.options
+      p.question-header Select an Article:
+      .row#options-wrapper
+        .col-md-4.option-col
+          .option-button.orange-hoverable#option1
+            p.option-text#option1-text Option 1
+        .col-md-4.option-col
+          .option-button.orange-hoverable#option2
+            p.option-text#option2-text Option 2
+        .col-md-4.option-col
+          .option-button.orange-hoverable#option3
+            p.option-text#option3-text Option 3
+
+  script#template-choosing-wait(type="text/template")
+    .orange
+      p.button-text#waiting-message Waiting for player to choose article...
+  
+  script#template-waiting-host(type="text/template")
+    .orange
+      .button.orange-hoverable#start-game
+        p.button-text Start Game
+      
+  script#template-waiting-player(type="text/template")
+    .orange
+      p.button-text Waiting for host to start game...
+
+  script#template-host(type="text/template")
+    #fade-background
+      #host-game-menu.green
+        .input-group.mb-3
+          .input-group-prepend
+            .input-group-text Name
+          input.form-control#host-name(aria-label='Name')
+        .input-group.mb-3
+          .input-group-prepend
+            .input-group-text Number of Q's
+          input.form-control#question-number(aria-label="Number of Q's", value=15)
+        .input-group.mb-3
+          .input-group-prepend
+            .input-group-text Time per Q
+          input.form-control#question-time(aria-label='Time per Q',value=30)
+        .game-button.green-hoverable#host-game
+          p.game-button-text Host Game
+
+  script#template-rules(type="text/template")
+    #fade-background
+      #join-game-menu.green
+        h6 Welcome to WikiGuess!
+        p Guess the number missing from Wikipedia excerpts, marked by [???]
+        p The closer the guess, the higher the score!
+        p 
+        | Can play in a Public Game, Host/Join a game with friends, or try 
+        | the Time Trial for practice.
+
+
+  script#template-join(type="text/template")
+    #fade-background
+      #join-game-menu.green
+        .input-group.mb-3
+          .input-group-prepend
+            .input-group-text CODE 
+          input.form-control#join-code(aria-label='Name')
+        .input-group.mb-3
+          .input-group-prepend
+            .input-group-text Name
+          input.form-control#join-name(aria-label='Name')
+        .game-button#join-game
+          p.game-button-text Join Game
+
+  script#template-landing(type="text/template")
+    .title-container#title-container
+      img.title-background(src='/images/BackdropColor.svg')
+      
+    .content-container
+      .row#full-content
+        .col-sm-4#play-content
+          .play.green
+            .row
+              .col-3
+                p.section-header Play:
+              .col-9
+                .button-wrapper
+                  .game-button.green-hoverable#show-rules-button.m-0
+                    p.button-text Rules
+            .play-wrapper.row
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#public-game-button
+                  p.game-button-text Public Game
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#host-game-button
+                  p.game-button-text Host Game
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#join-game-button
+                  p.game-button-text Join Game
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#debug-mode-button
+                  p.game-button-text Debug Mode
+        .col-sm-8#question-content
+          .random-question.blue
+            .row
+              .col#random-question-text-col
+                p.section-header Random Question:
+              .col#new-question-col
+                .new-question
+                  .button-wrapper
+                    .button.blue-hoverable#new-question
+                      p.button-text New Question
+            p#question-text Loading Question...
+            .row#bottom-row
+              .col#guess-text-col
+                p.input-label Guess: 
+              .col#input-col
+                input#guess-input(type="number")
+              .col#show-answer-col
+                .button.blue-hoverable#show-answer
+                  p.button-text Show Answer
+                p#answer 
+

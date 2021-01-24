@@ -1,0 +1,358 @@
+html
+{
+    height: 100%;
+    overflow-x: hidden;
+}
+body {
+  background-color: #fff;
+  max-width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  position: relative;
+  justify-content: center;
+}
+  .body-container {
+    max-width: 800px;
+    margin: auto;
+  }
+  #gameArea {
+    margin: 0px 10px;
+  }
+  .title-container {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+    .title-background {
+      z-index: 0;
+      position: absolute;
+      height: 184px;
+      left: calc(50% - 394px);
+      margin-top: 10px;
+    }
+  .content-container {
+    width: 100%;
+    height: auto;
+    min-height: 600px;
+    background-color: #fff;
+    position: relative;
+  }
+    .play {
+      padding: 16px;
+    }
+      @font-face {
+        font-family: JosefinSans;
+        src: url(../fonts/JosefinSans-Regular.ttf);
+      }
+      .section-header {
+        font-family: 'JosefinSans'; font-size: 30px;
+        margin-bottom: 8px;
+        line-height: 1em;
+      }
+      .button-wrapper {
+        align-items: end;
+        position: relative;
+      }
+        .button {
+          display: inline-block;
+          position: absolute;
+          right: 0;
+          padding: 3px 6px;
+          border-style: solid;
+          border-width: 1px;
+          user-select: none;
+          cursor: pointer;
+          transition: 0.3s;
+          text-align: center;
+        }
+          .button-text {
+            line-height: 1em;
+            margin: 0;
+            margin-top: 4px;
+            font-family: 'JosefinSans'; font-size: 20px;
+          }
+      .play-wrapper {
+        justify-content: center;
+      }
+        #show-rules-button {
+          display: inline-block;
+          position: absolute;
+          right: 0;
+          padding: 3px 6px;
+          border-style: solid;
+          border-width: 1px;
+          user-select: none;
+          width: 70px !important;
+        }
+        .game-button-wrapper{
+          align-content: center;
+        }
+        .game-button {
+          display: inline-block;
+          padding: 3px 6px;
+          margin: 10px 15px;
+          border-style: solid;
+          border-width: 1px;
+          text-align: center;
+          user-select: none;
+          cursor: pointer;
+          transition: 0.2s;
+          width: 200px;
+        }
+        .game-button:hover {
+          background-color: rgb(180, 255, 205);
+          cursor: pointer;
+        }
+          .game-button-text {
+            line-height: 1em;
+            margin: 5px;
+            margin-top: 10px;
+            font-family: 'JosefinSans'; font-size: 24px;
+          }
+    #random-question-text-col{
+      flex: 0 0 64%;
+      max-width: 64%;
+    }
+    #new-question-col{
+      padding-left: 0px !important; 
+      flex: 0 0 36%;
+      max-width: 36%;
+    }
+    .random-question {
+      padding: 16px;
+    }
+    #botton-row{
+      display: flex;
+      flex-direction: column;
+    }
+    #guess-text-col {
+      padding-right : 0px;
+      max-width : 80px;
+    }
+    .input-label {
+      font-family: 'JosefinSans'; font-size: 20px;
+      line-height: 1.5em;
+      margin-bottom: 0px;
+    }
+    #input-col {
+      padding-left: 0px;
+    }
+    #guess-input {
+      line-height: 26px;
+      -webkit-appearance: none;
+      margin: 0;
+      width: 100%;
+    }
+    #guess {
+      width: 90%;
+      margin-right: 15px;
+    }
+    #answers {
+      position: relative
+    }
+      #show-answer {
+        position: absolute;
+        right: 0;
+        margin-right: 15px;
+      }
+      #answer {
+        position: absolute;
+        right: 0;
+        margin-right: 15px;
+        font-family: 'JosefinSans'; font-size: 20px;
+        line-height: 1.5em;
+      }
+#fade-background{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background-color:rgb(100,100,100,0.5);
+  text-align:center;
+  z-index: 1;
+  cursor: pointer;
+}
+  #host-game-menu, #join-game-menu{
+    width:300px;
+    margin-top:150px;
+    padding: 15px;
+    padding-top: 20px;
+    display:inline-block;
+    z-index:2;
+  }
+  #rules-wrapper{
+    width:500px;
+    margin-top:150px;
+    padding: 15px;
+    padding-top: 20px;
+    display:inline-block;
+    z-index:2;
+  }
+  #player-container {
+    position: relative
+  }
+    #player-header {
+      font-family: 'JosefinSans';    
+      font-size: 24px;
+      margin-left: 10px;
+      margin-bottom: 0px;
+    }
+    #room-code {
+      font-family: 'JosefinSans';    
+      font-size: 18px;
+      margin-left: 10px;
+      margin-bottom: 0px;
+    }
+    .hl {
+      height: 2px;
+      width: 100%;
+      background-color: rgb(100,100,100);
+      margin-bottom: 5px;
+    }
+    #player-list {
+      margin-left: -4px;
+      margin-right: -4px;
+    }
+    .player-wrapper {
+      padding: 3px 4px !important;
+      max-width: 250px !important;
+      min-width: 150px !important;
+    }
+    .player {
+      height: 50px;
+      padding: 0; 
+      font-size: 18px;
+    }
+      .player-top {
+        position: relative;
+        height: 45%;
+        margin: 0px 8px !important;
+      }
+        .player-name {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      .player-bottom {
+        height: 55%;
+        margin: 0px 8px !important;
+      }
+        .status-wrapper {
+          position: relative;
+        }
+          .player-hl {
+            height: 1px;
+            width: 100%;
+            background-color: #879986;
+            margin-top: 2px;
+          }
+          .player-status {
+            margin-top: -2px;
+          }
+  .question-header {
+    font-family: 'JosefinSans';    
+    font-size: 24px;
+  }
+  #options-wrapper{
+    margin: 0px -5px !important;
+  }
+  .option-col{
+    padding: 0px 5px !important;
+  }
+  .option-button {
+    display: block;
+    padding: 3px 6px;
+    margin: 3px;
+    border-style: solid;
+    border-width: 1px;
+    user-select: none;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: '..';
+  }
+  .option-text {
+    line-height: 1em;
+    margin: 0;
+    margin-top: 4px;
+    font-family: 'JosefinSans'; font-size: 18px;
+  }
+  /* Colors */
+  .orange, .orange-hoverable {
+    background-color: #FFE8BA;
+  }
+  .orange-hoverable:hover {
+    background-color: #fdf0d6;
+    cursor: pointer;
+  }
+  .green, .green-hoverable {
+    background-color: #DDFADC;
+  }
+  .green-hoverable:hover {
+    background-color: #f0fff0;
+    cursor: pointer;
+  }
+  .blue, .blue-hoverable {
+    background-color: #D4E3FF;
+  }
+  .blue-hoverable:hover {
+    background-color: #e9f1ff;
+    cursor: pointer;
+  }
+  .options {
+    padding: 15px;
+    margin-bottom: 5px;
+    overflow: hidden
+  }
+  #full-content{
+    margin: -15px;
+  }
+  #play-content{
+    padding: 15px;
+  }
+  #question-content{
+    padding: 15px;
+  }
+  @media screen and (max-width: 850px) {
+    #full-content{
+      margin: -8px;
+    }
+    #play-content{
+      padding: 8px;
+    }
+    #question-content{
+      padding: 8px;
+    }
+    .game-button{
+      padding: 1px 3px;
+      margin: 5px 8px;
+      width: 160px;
+    }
+    .game-button-text{
+      margin: 2px;
+      margin-top: 6px;
+    }
+  }
+  /* DEBUG MODE */
+  .relative-parent {
+    position: relative;
+  }
+  /* REMOVE ARROWS FROM INPUTS */
+  /* Chrome, Safari, Edge, Opera */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }

@@ -1,0 +1,63 @@
+
+mixin junk
+  p Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec mattis libero dui, non blandit risus volutpat tincidunt. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Praesent vel nibh maximus diam lobortis congue. Duis sem risus, tempus a nunc vel, porta egestas lorem. Sed molestie dolor a consectetur fermentum. Praesent fermentum risus bibendum eros tempor, vel scelerisque tortor gravida. Cras pellentesque lacinia volutpat. Proin in suscipit arcu. Cras blandit justo eget erat ultrices, luctus suscipit odio mattis. Aenean egestas, sapien at tincidunt tempus, tortor mauris molestie augue, quis pharetra orci mi sed sapien. Proin ac ex consectetur, placerat massa eget, viverra est. Cras malesuada tempor quam vitae consectetur. Quisque sollicitudin in ipsum et efficitur. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed quis tincidunt felis.
+
+mixin sm-junk
+  p Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec mattis libero dui, non blandit risus volutpat tincidunt. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Praesent vel nibh maximus diam lobortis congue. Duis sem risus, tempus a nunc vel, porta egestas lorem. Sed molestie dolor a consectetur fermentum. 
+
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/css/game.css')
+    link(rel='stylesheet', href='/css/bootstrap.css')
+    link(rel='stylesheet', href='https://fonts.googleapis.com/css?family=Josefin Sans')
+    script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js")
+    script(src="https://cdn.socket.io/socket.io-1.4.5.js")
+    script(src='/js/game.js')
+    script(src='/js/fastclick.js')
+    script.
+      window.addEventListener('load', function() {
+      new FastClick(document.body);
+      }, false);
+
+    meta(charset="utf-8")
+    meta(http-equiv="X-UA-Compatible", content="IE=edge")
+    meta(name="viewport", content="width=device-width, initial-scale=1")
+
+  body
+    .body-container
+      .title-container
+        img.title-background(src='/images/BackdropColor.svg')
+        .title-shadow
+          .title-outline
+            p.title-title WikiGuess
+      .content-container
+        .row
+          .col-sm-5.p-3#player-container
+            p#player-header Players:
+            .hl
+              #player-list.row
+              //-
+                .player-wrapper.col-6
+                  .player
+                    .player-top.row.m-0
+                      .col-8.p-0
+                        p.player-name Max
+                      .text-right.col-4.p-0
+                        p.player-score 280
+                    .row.player-bottom.m-0
+                      .col-7.p-0
+                        .player-status.text-center 45,000
+                      .col-2.p-0
+                        img.img-fluid(src='images/clock.png')
+                      .col-3.p-0
+                        p \+46
+                .player-wrapper.col-6
+                  .player
+                .player-wrapper.col-6
+                  .player
+                .player-wrapper.col-6
+                  .player
+          .col-sm-7.p-3
+            

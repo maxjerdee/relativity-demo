@@ -1,0 +1,125 @@
+html
+{
+    height: 100%;
+}
+body {
+  background-color: #fff;
+  max-width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  justify-content: center;
+}
+  .body-container {
+    max-width: 800px;
+    margin: auto;
+  }
+  .title-container {
+    width: 100%;
+    height: 100px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+  }
+    .title-background {
+      z-index: 0;
+      position: absolute;
+    }
+      .title-outline {
+        margin: auto;
+        padding: 5px 15px;
+        text-align: center;
+        background-color:#fff;
+        position: relative;
+      }
+      .title-shadow {
+        width: 100%;
+        height: 100px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+        .title-text {
+          margin: 15px 5px 5px 5px;
+        }
+          .title-title {
+            font-family: 'Georgia';font-size: 36px;
+            margin: 0;
+          }
+          .title-description {
+            font-family: 'Georgia';font-size: 18px;
+            margin: 0;
+          }
+      .title-links {
+        max-width: 600px;
+        margin: 10px 0px 0px 0px;
+        padding: 5px;
+        box-shadow: 2px 2px 2px black;
+        text-align: center;
+        background-color: #eee;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+        .black {
+          color: #000;
+        }
+        .title-link {
+          font-family: 'Josefin Sans';font-size: 18px;
+          padding: 5px 10px 0px 10px;
+        }
+  .content-container {
+    width: 100%;
+    height: auto;
+    min-height: 600px;
+    background-color: #fff;
+    position: relative;
+  }
+    #player-container {
+      position: relative
+    }
+      #player-header {
+        font-family: 'Josefin Sans';    
+        font-size: 24px;
+        margin-left: 10px;
+        margin-bottom: 0px;
+      }
+      .hl {
+        height: 2px;
+        width: 100%;
+        background-color: rgb(100,100,100);
+        margin-bottom: 10px;
+      }
+      #player-list {
+        margin-left: -5px;
+        margin-right: -5px;
+      }
+      .player-wrapper {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        padding-top: 5px !important;
+      }
+      .player {
+        background-color: rgb(153, 255, 187);
+        height: 50px;
+        padding: 0 5px;
+        font-family: 'Josefin Sans';    
+        font-size: 18px;
+      }
+        .player-top {
+          position: relative;
+          height: 45%;
+        }
+          
+        .player-bottom {
+          height: 55%;
+        }
+          .player-status {
+            background-color: rgb(200, 255, 220);
+          }
+          .clock {
+            height: 100%;
+          }

@@ -1,0 +1,31 @@
+{
+  "name": "soilless",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon ./index.js"
+  },
+  "dependencies": {
+    "bootstrap": "^4.5.0",
+    "cookie-parser": "^1.4.5",
+    "ejs": "^2.7.4",
+    "express": "^4.17.1",
+    "mongodb": "^3.5.9",
+    "mongoose": "^5.9.23",
+    "pug": "^3.0.0",
+    "sass": "^1.26.9",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "got": "^11.3.0",
+    "nodemon": "^2.0.4",
+    "tape": "^4.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxjerdee/soilless-git.git"
+  },
+  "keywords": [],
+  "license": "MIT"
+}
