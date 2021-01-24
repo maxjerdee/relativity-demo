@@ -197,7 +197,7 @@ $(function() { // Module Format
       goDebug : function(){
         App.$gameArea.html(App.$templateDebug)
         Cookies.setCookie('mode','debug',10/(24*60))
-        App.newQuestion(first=true)
+        App.newQuestion(true)
       },
       removeFade : function(e){
         if (e.target == this){

@@ -116,7 +116,6 @@ async function submitFeedback(data){
  * @param data Socket.IO json with mode, user_id 
  */
 async function handleLanding(data){
-  console.log(data.mode)
   switch(data.mode){
     case 'landing':
     case 'debug':
