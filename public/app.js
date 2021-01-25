@@ -19,7 +19,8 @@ $(function() { // Module Format
      * Function called when server confirms connection
      */
     onConnected : function(data) {
-      App.user = data.address
+      var pieces = data.address.split(':')
+      App.user = pieces[pieces.length - 1]
     },
     newQuestionResponse : function(data) {
       App.displayQuestion(data.question)
@@ -47,16 +48,16 @@ $(function() { // Module Format
      * Cache templates (and the document object) for later use
      */
     cacheElements: function () {
-        // Frequently referenced objects
-        App.$doc = $(document); 
-        App.$gameArea = $('#gameArea'); // Full body
-        App.$gameCover = $('#gameCover'); // overlay (used to gray out #gameArea)
-        // Cache templates
-        App.$templateLanding = $('#template-landing').html();
-        App.$templateRules = $('#template-rules').html();
-        App.$templateHost = $('#template-host').html();
-        App.$templateJoin = $('#template-join').html();
-        App.$templateDebug = $('#template-debug').html();
+      // Frequently referenced objects
+      App.$doc = $(document); 
+      App.$gameArea = $('#gameArea'); // Full body
+      App.$gameCover = $('#gameCover'); // overlay (used to gray out #gameArea)
+      // Cache templates
+      App.$templateLanding = $('#template-landing').html();
+      App.$templateRules = $('#template-rules').html();
+      App.$templateHost = $('#template-host').html();
+      App.$templateJoin = $('#template-join').html();
+      App.$templateDebug = $('#template-debug').html();
     },
     /**
      * Client-side startup
@@ -102,6 +103,7 @@ $(function() { // Module Format
       App.$doc.on('click', '#join-game-button', App.Landing.joinGameMenu);
       App.$doc.on('click', '#debug-mode-button', App.Landing.goDebug);
       App.$doc.on('click', '#fade-background', App.Landing.removeFade);
+      App.$doc.on('click', '#host-game', App.Landing.hostGame)
       $("#guess-input").keyup(function(event){
         if (event.keyCode === 13) {
           App.submitAnswer();
@@ -119,7 +121,9 @@ $(function() { // Module Format
      */
     newQuestion : function(first = false){
       if(!first){
-        App.submitFeedback()
+        if(Cookies.getMode()=='debug' || App.guess != -1){ // Stop raw New Question from giving feedback
+          App.submitFeedback()
+        }
         Helper.clearFeedbackButtons()
       }
       $('#guess-button').show();
@@ -248,6 +252,9 @@ $(function() { // Module Format
         if (e.target == this){
           App.$gameCover.html('');
         }
+      },
+      hostGame : function(){
+        IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val()})
       }
     },
     // Debug Mode Functions

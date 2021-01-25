@@ -42,6 +42,8 @@ exports.initGame = function(sio, socket, address){
   gameSocket.on('submitFeedback', submitFeedback);
   gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
   gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
+  // Landing Events
+  gameSocket.on('hostGame', hostGame); 
   // Debug Events
   // Routing
   gameSocket.on('handleLanding',handleLanding)
@@ -116,12 +118,16 @@ async function submitAnswer(data){
   if(question.num_answer >= 10**6){ // given unit was millions
     guess = guess * 10**6;
   }
-  var ratio = data.guess/question.num_answer;
+  var ratio = guess/question.num_answer;
   if(ratio <= 0){
     ratio = 10**3;
   }
   const score = Math.round(Math.max(100 - 100*Math.abs(Math.log10(ratio)),0));
   gameSocket.emit('submitAnswerResponse',{'question': question, 'score': score})
+}
+// LANDING EVENTS
+function hostGame(data){
+  console.log(data)
 }
 // DEBUG MODE
 

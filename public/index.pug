@@ -10,6 +10,76 @@ block content
   #gameArea
   #gameCover
 
+  script#template-landing(type="text/template")
+    .title-container#title-container
+      img.title-background(src='/images/BackdropColor.svg')
+      
+    .content-container
+      .row#full-content
+        .col-sm-4#play-content
+          .play.green
+            .row
+              .col-3
+                p.section-header Play:
+              .col-9
+                .button-wrapper
+                  .game-button.green-hoverable#show-rules-button.m-0
+                    p.button-text Rules
+            .play-wrapper.row
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#public-game-button
+                  p.game-button-text Public Game
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#host-game-button
+                  p.game-button-text Host Game
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#join-game-button
+                  p.game-button-text Join Game
+              .col-6-sm.game-buttom-wrapper
+                .game-button.green-hoverable#debug-mode-button
+                  p.game-button-text Debug Mode
+        .col-sm-8#question-content
+          .random-question.blue
+            .row
+              .col#random-question-text-col
+                p.section-header Random Question:
+              .col#new-question-col
+                .new-question.text-right
+                  .button-wrapper
+                    .button.blue-hoverable#new-question
+                      p.button-text New Question
+            p#question-text Loading Question...
+            .row#guess-row
+              .col#guess-text-col.l-370
+                p.input-label.l-370 Guess: 
+              .col#input-col
+                input#guess-input(type="number")
+              .col#units-col
+                p (million)
+              .col#show-answer-col.text-right
+                .button.blue-hoverable#guess-button
+                  p.button-text.l-650 Show Answer
+                  p.button-text.s-650 Answer
+                p.input-label#score 
+            .row#feedback-row.text-center
+              #feedback-wrapper
+                .button.blue-hoverable#like-button
+                  p.button-text Like
+                .button.blue-hoverable#dislike-button
+                  p.button-text Dislike
+                .button.blue-hoverable#report-button
+                  p.button-text Report
+
+  script#template-rules(type="text/template")
+    #fade-background
+      #join-game-menu.green
+        h6 Welcome to WikiGuess!
+        p Guess the number missing from Wikipedia excerpts, marked by [???]
+        p The closer the guess, the higher the score!
+        p 
+        | Can play in a Public Game, Host/Join a game with friends, or try 
+        | the Time Trial for practice.
+
   script#template-game(type="text/template")
     .body-container
       .title-container#title-container
@@ -165,88 +235,17 @@ block content
         .game-button.green-hoverable#host-game
           p.game-button-text Host Game
 
-  script#template-rules(type="text/template")
-    #fade-background
-      #join-game-menu.green
-        h6 Welcome to WikiGuess!
-        p Guess the number missing from Wikipedia excerpts, marked by [???]
-        p The closer the guess, the higher the score!
-        p 
-        | Can play in a Public Game, Host/Join a game with friends, or try 
-        | the Time Trial for practice.
-
 
   script#template-join(type="text/template")
     #fade-background
       #join-game-menu.green
         .input-group.mb-3
           .input-group-prepend
-            .input-group-text CODE 
-          input.form-control#join-code(aria-label='Name')
+            .input-group-text Code
+          input.form-control#join-code(aria-label='Code')
         .input-group.mb-3
           .input-group-prepend
             .input-group-text Name
           input.form-control#join-name(aria-label='Name')
         .game-button#join-game
           p.game-button-text Join Game
-
-  script#template-landing(type="text/template")
-    .title-container#title-container
-      img.title-background(src='/images/BackdropColor.svg')
-      
-    .content-container
-      .row#full-content
-        .col-sm-4#play-content
-          .play.green
-            .row
-              .col-3
-                p.section-header Play:
-              .col-9
-                .button-wrapper
-                  .game-button.green-hoverable#show-rules-button.m-0
-                    p.button-text Rules
-            .play-wrapper.row
-              .col-6-sm.game-buttom-wrapper
-                .game-button.green-hoverable#public-game-button
-                  p.game-button-text Public Game
-              .col-6-sm.game-buttom-wrapper
-                .game-button.green-hoverable#host-game-button
-                  p.game-button-text Host Game
-              .col-6-sm.game-buttom-wrapper
-                .game-button.green-hoverable#join-game-button
-                  p.game-button-text Join Game
-              .col-6-sm.game-buttom-wrapper
-                .game-button.green-hoverable#debug-mode-button
-                  p.game-button-text Debug Mode
-        .col-sm-8#question-content
-          .random-question.blue
-            .row
-              .col#random-question-text-col
-                p.section-header Random Question:
-              .col#new-question-col
-                .new-question.text-right
-                  .button-wrapper
-                    .button.blue-hoverable#new-question
-                      p.button-text New Question
-            p#question-text Loading Question...
-            .row#guess-row
-              .col#guess-text-col.l-370
-                p.input-label.l-370 Guess: 
-              .col#input-col
-                input#guess-input(type="number")
-              .col#units-col
-                p (million)
-              .col#show-answer-col.text-right
-                .button.blue-hoverable#guess-button
-                  p.button-text.l-650 Show Answer
-                  p.button-text.s-650 Answer
-                p.input-label#score 
-            .row#feedback-row.text-center
-              #feedback-wrapper
-                .button.blue-hoverable#like-button
-                  p.button-text Like
-                .button.blue-hoverable#dislike-button
-                  p.button-text Dislike
-                .button.blue-hoverable#report-button
-                  p.button-text Report
-
