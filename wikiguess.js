@@ -5,6 +5,15 @@ var io; // Reference to the Socket.io library
 var gameSocket; // Reference to the Socket.io object for the connected client
 var gameData = {};
 
+/* CONSTANTS */
+const MAX_PLAYERS = 10;
+/*
+gameData is a json that contains the status of all ongoing games (Time Trials, Public, and Private)
+Hopefully, it will be periodically backed up to a database, but for quick access it is also stored locally
+It is first indexed by the room-id. In the case of a Public or Private game, this would be a 4-digit CODE.
+
+*/
+
 // DATABASE CONNECTION
 const MongoClient = require('mongodb').MongoClient;
 const uri = "mongodb+srv://mjerdee:doorknob2468!@cluster0.zmzmc.mongodb.net/Cluster0?retryWrites=true&w=majority"
@@ -44,6 +53,7 @@ exports.initGame = function(sio, socket, address){
   gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
   // Landing Events
   gameSocket.on('hostGame', hostGame); 
+  gameSocket.on('joinGame', joinGame); 
   // Debug Events
   // Routing
   gameSocket.on('handleLanding',handleLanding)
@@ -128,6 +138,102 @@ async function submitAnswer(data){
 // LANDING EVENTS
 function hostGame(data){
   console.log(data)
+  console.log('Game Hosted')
+  const code = generateCode()
+  if(code != ""){
+    gameSocket.join(code);
+    var name = data.name
+    if(name == ""){
+      name = 'Player 1'
+    }
+    gameData[code] = {'code':code, // Room code
+                      'scoreMode':data.score_mode,
+                      'questionNumber':1, // Which question the lobby is on
+                      'maxQuestions':data.question_number, // Total number of questions
+                      'maxTime':data.question_time, // Maximum alloted time for each question (s)
+                      'questionTimer':data.question_time, // Time remaining for current question (s)
+                      'chooseTimer':8, // Time remaining to choose title (s)
+                      'questionId':0, // 
+                      'question':'',
+                      'gamePhase':'waiting',
+                      'chooser':0,
+                      'players':[{'id':0, // Information displayed on the player panel
+                                  'present':true,
+                                  'ip':data.user,
+                                  'name':name,
+                                  'score':0,
+                                  'status':'Host',
+                                  'guess':0,
+                                  'questionScore':'',
+                                  'role':'host'}
+                                ]
+                      };
+    console.log(gameData[code])
+    gameSocket.emit('joinGameResponse',{'response':'success','code':code,'gameState':gameData[code],'playerId':0})
+  }else{
+    console.log('Lobbies Full')
+    gameSocket.emit('joinGameResponse',{'response':'lobbies_full'})
+  }
+  console.log(Object.keys(gameData))
+}
+function generateCode(){
+  alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+  // console.log(data)
+  // Generate random code
+  var code = "";
+  const MAX_TRIES = 10;
+  for(var t = 0; t < MAX_TRIES; t++){
+    var tempCode = "";
+    for(var l = 0; l < 4; l++){
+      tempCode += alphabet[Math.floor(Math.random()*26)];
+    }
+    if(!Object.keys(gameData).includes(tempCode)){
+      code = tempCode;
+      break;
+    }
+  }
+  return code
+}
+function joinGame(data){
+  console.log('try join')
+  if(Object.keys(gameData).includes(data.code)){
+    var playerId = -1;
+    var playerIds = [];
+    var available = false
+    for(var i = 0; i < gameData[data.code].players.length; i++){
+      playerIds.push(gameData[data.code].players[i].id)
+    }
+    for(var id = 0; id < MAX_PLAYERS; id++){ // Check for an available id
+      if(!playerIds.includes(id)){
+        playerId = id
+        break
+      }
+    }
+    if(playerId >= 0){
+      var name = data.name
+      if(name == ''){
+        name = 'Player ' + playerId
+      }
+      gameData[data.code].players.push({
+                                          'id':playerId, // Information displayed on the player panel
+                                          'present':true,
+                                          'ip':data.user,
+                                          'name':name,
+                                          'score':0,
+                                          'status':'...',
+                                          'guess':0,
+                                          'questionScore':'',
+                                          'role':'player'
+                                        })
+      console.log(gameData[data.code])
+      gameSocket.emit('joinGameResponse',{'gameData':gameData[data.code],'playerId':playerId})
+      io.sockets.in(data.code).emit('updatePlayerState',gameData[data.code])
+    }else{
+      gameSocket.emit('joinGameResponse',{'response':'lobby_full'})
+    }
+  }else{
+    gameSocket.emit('joinGameResponse',{'response':'invalid_code'})
+  }
 }
 // DEBUG MODE
 

@@ -14,6 +14,9 @@ $(function() { // Module Format
       IO.socket.on('connected', IO.onConnected);
       IO.socket.on('newQuestionResponse', IO.newQuestionResponse);
       IO.socket.on('submitAnswerResponse', IO.submitAnswerResponse);
+      IO.socket.on('joinGameResponse', IO.joinGameResponse);
+      IO.socket.on('updateGameState', IO.updateGameState);
+      IO.socket.on('updatePlayerState', IO.updatePlayerState);
     },
     /**
      * Function called when server confirms connection
@@ -31,6 +34,110 @@ $(function() { // Module Format
       $('#guess-button').hide();
       $('#score').html('Score: '+data.score);
       $('#score').show();
+    },
+    joinGameResponse : function(data){
+      console.log(data)
+      switch(data.response){
+        case 'success':
+          Cookies.setCookie('mode','game',60/(24*60))
+          Cookies.setCookie('code',data.code,60/(24*60))
+          //Cookies.setCookie('socket_id',IO.socket_id,60/(24*60))
+          App.$gameCover.html('')
+          App.showInitScreen()
+          App.playerId = data.playerId
+          App.playerRole = data.gameState.players[App.playerId].role
+          IO.updateGameState(data.gameState)
+          break;
+        case 'lobbies_full':
+          $('#error-message').html('Lobbies are full')
+          break;
+        case 'invalid_code':
+          $('#error-message').html('Invalid Code')
+          break;
+        case 'lobby_full':
+          $('#error-message').html('Lobby Full')
+          break;
+      }
+    },
+    /**
+     * Update the UI to reflect the current gameState. Includes calling updatePlayerState()
+     * @param {*} gameState 
+     */
+    updateGameState : function(gameState){
+      console.log(gameState)
+      IO.updatePlayerState(gameState)
+      App.gamePhase = gameState.gamePhase;
+      App.maxTime = gameState.maxTime;
+      $('#room-text').html('Code: ' + gameState.code)
+      switch(gameState.scoreMode){
+        case 'normal':
+          $('#mode-text').html('Mode: Normal')
+          break
+        case 'closest':
+          $('#mode-text').html('Mode: Closest')
+          break
+        case 'under':
+          $('#mode-text').html('Mode: Under')
+          break
+      }
+      switch(gameState.gamePhase){
+        case 'waiting':
+          if(App.playerRole=='host'){
+            $('#question-header').html(App.$templateWaitingHost);
+          }else{
+            $('#question-header').html(App.$templateWaitingPlayer);
+          }
+          break;
+        case 'choosing':
+          if(App.playerId == gameState['chooser']){
+            $('#question-header').html(App.$templateChoosing);
+            $('#option1-text').html(gameState['choices'][0]['title']);
+            $('#option2-text').html(gameState['choices'][1]['title']);
+            $('#option3-text').html(gameState['choices'][2]['title']);
+          }else{
+            $('#question-header').html(App.$templateChoosingWait);
+            console.log( gameState.players[gameState.chooser].name);
+            $('#waiting-message').html("Waiting for " + gameState.players[gameState.chooser].name + " to choose an article...")
+          }
+            $('#question-text').html(data['question']);
+            if(data['players'][App.playerId]['status'] != '...'){
+              $('#guess').hide()
+            }
+            break;
+        case 'guessing':
+            $('#question-header').html('');
+            $('#question-wrapper').html(App.$templateGuessing);
+            $('#question-number').html('Q: '+data['questionNumber']+'/'+data['maxQuestions'])
+            $('#timer').html('Time: ' + data['maxTime'])
+            $('#question-text').html(data['question']);
+            if(data['players'][App.playerId]['status'] != '...'){
+                $('#guess').hide()
+            }else{
+                // Enter Key Listener
+                $("#guess-input").keyup(function(event) {
+                    if (event.keyCode === 13) {
+                        $("#guess").click();
+                    }
+                });
+            }
+            break;
+      }
+    },
+    updatePlayerState : function(gameState){
+      var sortedScores = new Array(gameState.players.length);
+      for(var i = 0; i < gameState.players.length; i++){
+        sortedScores[i] = gameState.players[i].score
+      }
+      sortedScores = sortedScores.sort();
+      $('#player-list').html('');
+      for(var i = 0; i < gameState.players.length; i++){
+        var playerData = gameState.players[i];
+        $('#player-list').append('<div class="player-wrapper col-6"><div class="player green"><div class="player-top row"><div class="col-8 p-0"><p class="player-name">'+playerData.name+'</p></div><div class="text-right col-4 p-0"><p class="player-score">'+playerData.score+'</p></div></div><div class="row player-bottom"><div class="col-8 p-0 status-wrapper"><div class="player-hl"></div><div class="player-status">'+playerData.status+'</div></div><div class="col-4 p-0 text-right"><p>'+playerData.questionScore+'</p></div></div></div></div>');
+      }
+      //Still want to remove the player's Guess Button
+      if(gameState.players[App.playerId].status != '...'){
+        $('#guess-button').hide()
+      }
     }
   }
   var App = {
@@ -39,6 +146,10 @@ $(function() { // Module Format
     guess: -1,
     user: 'unknown',
     feedback: 'none',
+    playerRole: 'player',
+    gamePhase: 'waiting',
+    maxTime: 30,
+    playerId: -1,
     init: function () {
         App.cacheElements();
         App.showInitScreen();
@@ -58,6 +169,10 @@ $(function() { // Module Format
       App.$templateHost = $('#template-host').html();
       App.$templateJoin = $('#template-join').html();
       App.$templateDebug = $('#template-debug').html();
+      App.$templateGame = $('#template-game').html();
+      App.$templateGuessing = $('#template-guessing').html();
+      App.$templateWaitingHost = $('#template-waiting-host').html();
+      App.$templateWaitingPlayer = $('#template-waiting-player').html();
     },
     /**
      * Client-side startup
@@ -72,6 +187,9 @@ $(function() { // Module Format
         case 'debug':
           App.$gameArea.html(App.$templateDebug);
           App.newQuestion(true)
+          break;
+        case 'game':
+          App.$gameArea.html(App.$templateGame)
           break;
       }
       IO.socket.emit('handleLanding',{'mode':mode}) // Server-side startup
@@ -104,6 +222,7 @@ $(function() { // Module Format
       App.$doc.on('click', '#debug-mode-button', App.Landing.goDebug);
       App.$doc.on('click', '#fade-background', App.Landing.removeFade);
       App.$doc.on('click', '#host-game', App.Landing.hostGame)
+      App.$doc.on('click', '#join-game', App.Landing.joinGame)
       $("#guess-input").keyup(function(event){
         if (event.keyCode === 13) {
           App.submitAnswer();
@@ -254,7 +373,10 @@ $(function() { // Module Format
         }
       },
       hostGame : function(){
-        IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val()})
+        IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val(),'score_mode':$('#scoreMode').val()})
+      },
+      joinGame : function(){
+        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'join_code':$('#join-code').val()})
       }
     },
     // Debug Mode Functions
@@ -269,7 +391,7 @@ $(function() { // Module Format
      * @param {*} cvalue Cookie value
      * @param {number=100} exdays Number of days cookie will last
      */
-    setCookie : function(cname, cvalue, exdays=100) {
+    setCookie : function(cname, cvalue, exdays=100) { // Should add "Secure" to the end of the cookie string for https
       var d = new Date();
       d.setTime(d.getTime() + (exdays*24*60*60*1000));
       var expires = "expires="+ d.toUTCString();
