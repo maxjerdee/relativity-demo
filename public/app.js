@@ -24,6 +24,15 @@ $(function() { // Module Format
     onConnected : function(data) {
       var pieces = data.address.split(':')
       App.user = pieces[pieces.length - 1]
+      const mode = Cookies.getMode();
+      switch(mode){ // Ask for a new question now that we are connected
+        case 'landing':
+        case 'debug':
+          App.newQuestion(true)
+          break;
+        case 'game':
+          break;
+      }
     },
     newQuestionResponse : function(data) {
       App.displayQuestion(data.question)
@@ -36,7 +45,6 @@ $(function() { // Module Format
       $('#score').show();
     },
     joinGameResponse : function(data){
-      console.log(data)
       switch(data.response){
         case 'success':
           Cookies.setCookie('mode','game',60/(24*60))
@@ -44,6 +52,7 @@ $(function() { // Module Format
           //Cookies.setCookie('socket_id',IO.socket_id,60/(24*60))
           App.$gameCover.html('')
           App.showInitScreen()
+          console.log('set id to ' + data.playerId)
           App.playerId = data.playerId
           App.playerRole = data.gameState.players[App.playerId].role
           IO.updateGameState(data.gameState)
@@ -135,6 +144,8 @@ $(function() { // Module Format
         $('#player-list').append('<div class="player-wrapper col-6"><div class="player green"><div class="player-top row"><div class="col-8 p-0"><p class="player-name">'+playerData.name+'</p></div><div class="text-right col-4 p-0"><p class="player-score">'+playerData.score+'</p></div></div><div class="row player-bottom"><div class="col-8 p-0 status-wrapper"><div class="player-hl"></div><div class="player-status">'+playerData.status+'</div></div><div class="col-4 p-0 text-right"><p>'+playerData.questionScore+'</p></div></div></div></div>');
       }
       //Still want to remove the player's Guess Button
+      console.log(gameState.players)
+      console.log(App.playerId)
       if(gameState.players[App.playerId].status != '...'){
         $('#guess-button').hide()
       }
@@ -179,20 +190,19 @@ $(function() { // Module Format
      */
     showInitScreen: function(){
       const mode = Cookies.getMode();
+      console.log('initMode' + mode);
       switch(mode){
         case 'landing':
           App.$gameArea.html(App.$templateLanding);
-          App.newQuestion(true)
           break;
         case 'debug':
           App.$gameArea.html(App.$templateDebug);
-          App.newQuestion(true)
           break;
         case 'game':
           App.$gameArea.html(App.$templateGame)
           break;
       }
-      IO.socket.emit('handleLanding',{'mode':mode}) // Server-side startup
+      IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id}) // Server-side startup
     },
     /**
      * Return to home screen. Usually called by clicking the banner
@@ -258,7 +268,9 @@ $(function() { // Module Format
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
-      IO.socket.emit('newQuestion');
+      console.log(first)
+      console.log(IO.socket.id)
+      IO.socket.emit('newQuestion',{'socket_id':IO.socket.id});
     },
     /**
      * Called by IO.newQuestionResponse()
@@ -330,6 +342,7 @@ $(function() { // Module Format
       $('#feedback-row').children().show()
       App.guess = $('#guess-input').val()
       IO.socket.emit('submitAnswer',{
+                                      'socket_id':IO.socket.id,
                                       'question_id': App.question_id,
                                       'guess': App.guess
                                     });
@@ -343,7 +356,8 @@ $(function() { // Module Format
                         'user':App.user,
                         'mode':Cookies.getMode(),
                         'guess':App.guess,
-                        'feedback':App.feedback
+                        'feedback':App.feedback,
+                        'socket_id':IO.socket.id
                         };
       console.log(feedback)
       IO.socket.emit('submitFeedback',feedback);
@@ -354,7 +368,7 @@ $(function() { // Module Format
         App.$gameCover.html(App.$templateRules)
       },
       goPublic : function(){
-        IO.socket.emit('goPublic')
+        IO.socket.emit('goPublic',{'socket_id':IO.socket.id})
       },
       hostGameMenu : function(){
         App.$gameCover.html(App.$templateHost)
@@ -376,7 +390,8 @@ $(function() { // Module Format
         IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val(),'score_mode':$('#scoreMode').val()})
       },
       joinGame : function(){
-        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'join_code':$('#join-code').val()})
+        console.log(IO.socket.id)
+        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'code':$('#join-code').val()})
       }
     },
     // Debug Mode Functions

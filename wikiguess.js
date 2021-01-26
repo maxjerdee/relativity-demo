@@ -4,6 +4,7 @@
 var io; // Reference to the Socket.io library
 var gameSocket; // Reference to the Socket.io object for the connected client
 var gameData = {};
+var connections = {}; // Keep track of all socket connections, as well as the room they are in
 
 /* CONSTANTS */
 const MAX_PLAYERS = 10;
@@ -46,8 +47,11 @@ exports.initGame = function(sio, socket, address){
   // Saves the Socket.IO arguments to the global variables
   io = sio; 
   gameSocket = socket;
+  connections[socket.id] = {'room':'none'}
+  console.log(connections)
   gameSocket.emit('connected', {'address': address}); // Tell client server is live
   // General Events (API)
+  socket.on('disconnect', disconnect);
   gameSocket.on('submitFeedback', submitFeedback);
   gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
   gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
@@ -92,9 +96,9 @@ interactions:"[]"
   return await getQuestionById(question_id)
 }
 /* GENERAL FUNCTIONS */
-async function newQuestion(){
+async function newQuestion(data){
   const question = await randomQuestion();
-  await gameSocket.emit('newQuestionResponse',{'question': question})
+  await io.to(data.socket_id).emit('newQuestionResponse',{'question': question})
 }
 /**
  * Function to call when writing feedback to the database
@@ -133,12 +137,10 @@ async function submitAnswer(data){
     ratio = 10**3;
   }
   const score = Math.round(Math.max(100 - 100*Math.abs(Math.log10(ratio)),0));
-  gameSocket.emit('submitAnswerResponse',{'question': question, 'score': score})
+  io.to(data.socket_id).emit('submitAnswerResponse',{'question': question, 'score': score})
 }
 // LANDING EVENTS
 function hostGame(data){
-  console.log(data)
-  console.log('Game Hosted')
   const code = generateCode()
   if(code != ""){
     gameSocket.join(code);
@@ -168,13 +170,12 @@ function hostGame(data){
                                   'role':'host'}
                                 ]
                       };
-    console.log(gameData[code])
-    gameSocket.emit('joinGameResponse',{'response':'success','code':code,'gameState':gameData[code],'playerId':0})
+    io.to(data.socket_id).emit('joinGameResponse',{'response':'success','code':code,'gameState':gameData[code],'playerId':0})
   }else{
     console.log('Lobbies Full')
-    gameSocket.emit('joinGameResponse',{'response':'lobbies_full'})
+    io.to(data.socket_id).emit('joinGameResponse',{'response':'lobbies_full'})
   }
-  console.log(Object.keys(gameData))
+  console.log('Current Rooms: '+ Object.keys(gameData))
 }
 function generateCode(){
   alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
@@ -195,7 +196,6 @@ function generateCode(){
   return code
 }
 function joinGame(data){
-  console.log('try join')
   if(Object.keys(gameData).includes(data.code)){
     var playerId = -1;
     var playerIds = [];
@@ -211,8 +211,8 @@ function joinGame(data){
     }
     if(playerId >= 0){
       var name = data.name
-      if(name == ''){
-        name = 'Player ' + playerId
+      if(name == ''){ // Give Player a name with id
+        name = 'Player ' + (playerId+1)
       }
       gameData[data.code].players.push({
                                           'id':playerId, // Information displayed on the player panel
@@ -225,14 +225,13 @@ function joinGame(data){
                                           'questionScore':'',
                                           'role':'player'
                                         })
-      console.log(gameData[data.code])
-      gameSocket.emit('joinGameResponse',{'gameData':gameData[data.code],'playerId':playerId})
+      io.to(data.socket_id).emit('joinGameResponse',{'response':'success','gameState':gameData[data.code],'playerId':playerId})
       io.sockets.in(data.code).emit('updatePlayerState',gameData[data.code])
     }else{
-      gameSocket.emit('joinGameResponse',{'response':'lobby_full'})
+      io.to(data.socket_id).emit('joinGameResponse',{'response':'lobby_full'})
     }
   }else{
-    gameSocket.emit('joinGameResponse',{'response':'invalid_code'})
+    io.to(data.socket_id).emit('joinGameResponse',{'response':'invalid_code'})
   }
 }
 // DEBUG MODE
@@ -248,4 +247,7 @@ async function handleLanding(data){
     case 'debug':
       break;
   }
+}
+function disconnect() {
+  delete connections[gameSocket.id]
 }
