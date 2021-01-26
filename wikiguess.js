@@ -47,11 +47,10 @@ exports.initGame = function(sio, socket, address){
   // Saves the Socket.IO arguments to the global variables
   io = sio; 
   gameSocket = socket;
-  connections[socket.id] = {'room':'none'}
-  console.log(connections)
+  connections[socket.id] = {'room':'none','socket':socket}
   gameSocket.emit('connected', {'address': address}); // Tell client server is live
   // General Events (API)
-  socket.on('disconnect', disconnect);
+  gameSocket.on('disconnect', disconnect);
   gameSocket.on('submitFeedback', submitFeedback);
   gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
   gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
@@ -143,7 +142,6 @@ async function submitAnswer(data){
 function hostGame(data){
   const code = generateCode()
   if(code != ""){
-    gameSocket.join(code);
     var name = data.name
     if(name == ""){
       name = 'Player 1'
@@ -170,12 +168,27 @@ function hostGame(data){
                                   'role':'host'}
                                 ]
                       };
-    io.to(data.socket_id).emit('joinGameResponse',{'response':'success','code':code,'gameState':gameData[code],'playerId':0})
+    addToGame(data.socket_id,code,gameData[code],0)
   }else{
     console.log('Lobbies Full')
     io.to(data.socket_id).emit('joinGameResponse',{'response':'lobbies_full'})
   }
   console.log('Current Rooms: '+ Object.keys(gameData))
+}
+function addToGame(socket_id,code,gameState,playerId){
+  connections[socket_id].socket.join(code)
+  io.to(socket_id).emit('joinGameResponse',{'response':'success','code':code,'gameState':gameState,'playerId':playerId})
+  io.of('/').in(code).clients(function(error,clients){
+    for(var i = 0; i < clients.length; i++){
+      console.log('sending to '+ clients[i] + ' of room ' + code)
+      //io.to(socket_id).emit('updatePlayerState',{'gameState':gameState})
+      //io.to(clients[i]).emit('updatePlayerState',{'gameState':gameState})
+    }
+    io.to(code).emit('updatePlayerState',{'gameState':gameState})
+  });
+  if(Object.keys(gameData).includes(socket_id)){
+    connections[socket_id].room = code
+  }
 }
 function generateCode(){
   alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
@@ -225,8 +238,7 @@ function joinGame(data){
                                           'questionScore':'',
                                           'role':'player'
                                         })
-      io.to(data.socket_id).emit('joinGameResponse',{'response':'success','gameState':gameData[data.code],'playerId':playerId})
-      io.sockets.in(data.code).emit('updatePlayerState',gameData[data.code])
+      addToGame(data.socket_id,data.code,gameData[data.code],playerId)
     }else{
       io.to(data.socket_id).emit('joinGameResponse',{'response':'lobby_full'})
     }

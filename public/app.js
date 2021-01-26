@@ -16,7 +16,7 @@ $(function() { // Module Format
       IO.socket.on('submitAnswerResponse', IO.submitAnswerResponse);
       IO.socket.on('joinGameResponse', IO.joinGameResponse);
       IO.socket.on('updateGameState', IO.updateGameState);
-      IO.socket.on('updatePlayerState', IO.updatePlayerState);
+      IO.socket.on('updatePlayerState', IO.updatePlayerStateWrapper);
     },
     /**
      * Function called when server confirms connection
@@ -132,6 +132,10 @@ $(function() { // Module Format
             break;
       }
     },
+    updatePlayerStateWrapper : function(data){
+      console.log('updatePlayerStateWrapper'+data.gameState)
+      IO.updatePlayerState(data.gameState)
+    },
     updatePlayerState : function(gameState){
       var sortedScores = new Array(gameState.players.length);
       for(var i = 0; i < gameState.players.length; i++){
@@ -144,8 +148,8 @@ $(function() { // Module Format
         $('#player-list').append('<div class="player-wrapper col-6"><div class="player green"><div class="player-top row"><div class="col-8 p-0"><p class="player-name">'+playerData.name+'</p></div><div class="text-right col-4 p-0"><p class="player-score">'+playerData.score+'</p></div></div><div class="row player-bottom"><div class="col-8 p-0 status-wrapper"><div class="player-hl"></div><div class="player-status">'+playerData.status+'</div></div><div class="col-4 p-0 text-right"><p>'+playerData.questionScore+'</p></div></div></div></div>');
       }
       //Still want to remove the player's Guess Button
-      console.log(gameState.players)
-      console.log(App.playerId)
+      console.log('updatePlayerState '+gameState.players)
+      console.log('updatePlayerState '+App.playerId)
       if(gameState.players[App.playerId].status != '...'){
         $('#guess-button').hide()
       }
@@ -268,8 +272,8 @@ $(function() { // Module Format
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
-      console.log(first)
-      console.log(IO.socket.id)
+      console.log('newQuestion '+ first)
+      console.log('newQuestion '+ IO.socket.id)
       IO.socket.emit('newQuestion',{'socket_id':IO.socket.id});
     },
     /**
@@ -359,7 +363,7 @@ $(function() { // Module Format
                         'feedback':App.feedback,
                         'socket_id':IO.socket.id
                         };
-      console.log(feedback)
+      console.log('Feedback: '+feedback)
       IO.socket.emit('submitFeedback',feedback);
     },
     // Client-side functions called from landing (mostly bound to buttons)
@@ -390,8 +394,8 @@ $(function() { // Module Format
         IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val(),'score_mode':$('#scoreMode').val()})
       },
       joinGame : function(){
-        console.log(IO.socket.id)
-        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'code':$('#join-code').val()})
+        console.log('joinGame: '+IO.socket.id)
+        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'code':$('#join-code').val().toUpperCase()})
       }
     },
     // Debug Mode Functions
