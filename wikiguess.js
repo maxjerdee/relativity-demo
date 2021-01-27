@@ -48,9 +48,11 @@ exports.initGame = function(sio, socket, address){
   io = sio; 
   gameSocket = socket;
   connections[socket.id] = {'room':'none','socket':socket}
+  console.log('Added ' + socket.id) 
+  console.log(Object.keys(connections))
   gameSocket.emit('connected', {'address': address}); // Tell client server is live
-  // General Events (API)
   gameSocket.on('disconnect', disconnect);
+  // General Events (API)
   gameSocket.on('submitFeedback', submitFeedback);
   gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
   gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
@@ -60,6 +62,27 @@ exports.initGame = function(sio, socket, address){
   // Debug Events
   // Routing
   gameSocket.on('handleLanding',handleLanding)
+}
+function disconnect(){ // This isn't a great way to do this, but having trouble identifying where the disconnect event came from.
+  for (let [key, value] of Object.entries(connections)) {
+    if(!value.socket.connected){
+      console.log(`Removed ${key}`)
+      if(value.room != 'none'){
+        if(Object.keys(gameData).includes(value.room)){
+          for(var i = 0; i < gameData[value.room].players.length; i++){
+            if(gameData[value.room].players[i].socket_id == key && gameData[value.room].players[i].present){
+              gameData[value.room].players[i].present = false
+              io.to(value.room).emit('updatePlayerState',{'gameState':gameData[value.room]})
+              console.log(`Notified the room ${value.room}`)
+            }
+          }
+        }else{
+          console.log(`No room ${value.room} to notify`)
+        }
+      }
+      delete connections[key]
+    }
+  }
 }
 /**API
  * Functions called by all sorts of screens 
@@ -71,9 +94,9 @@ async function getQuestionById(question_id){
   var result = {}
   try {
     result = await client.db("wiki-guess").collection("questions").findOne({ _id: question_id });
-  }catch (error) {
+  } catch (error) {
     console.error(error);
-  }
+  } 
   return result
 }
 async function randomQuestion(){
@@ -159,7 +182,7 @@ function hostGame(data){
                       'chooser':0,
                       'players':[{'id':0, // Information displayed on the player panel
                                   'present':true,
-                                  'ip':data.user,
+                                  'socket_id':data.socket_id,
                                   'name':name,
                                   'score':0,
                                   'status':'Host',
@@ -176,16 +199,15 @@ function hostGame(data){
   console.log('Current Rooms: '+ Object.keys(gameData))
 }
 function addToGame(socket_id,code,gameState,playerId){
-  connections[socket_id].socket.join(code)
+  if(Object.keys(connections).includes(socket_id)){
+    connections[socket_id].socket.join(code)
+    connections[socket_id].room = code
+  }else{
+    console.log('missing '+socket_id) 
+    console.log('connectedIds '+Object.keys(connections))
+  }
   io.to(socket_id).emit('joinGameResponse',{'response':'success','code':code,'gameState':gameState,'playerId':playerId})
-  io.of('/').in(code).clients(function(error,clients){
-    for(var i = 0; i < clients.length; i++){
-      console.log('sending to '+ clients[i] + ' of room ' + code)
-      //io.to(socket_id).emit('updatePlayerState',{'gameState':gameState})
-      //io.to(clients[i]).emit('updatePlayerState',{'gameState':gameState})
-    }
-    io.to(code).emit('updatePlayerState',{'gameState':gameState})
-  });
+  io.to(code).emit('updatePlayerState',{'gameState':gameState})
   if(Object.keys(gameData).includes(socket_id)){
     connections[socket_id].room = code
   }
@@ -230,7 +252,7 @@ function joinGame(data){
       gameData[data.code].players.push({
                                           'id':playerId, // Information displayed on the player panel
                                           'present':true,
-                                          'ip':data.user,
+                                          'socket_id':data.socket_id,
                                           'name':name,
                                           'score':0,
                                           'status':'...',
@@ -254,12 +276,25 @@ function joinGame(data){
  * @param data Socket.IO json with mode, user_id 
  */
 async function handleLanding(data){
+  console.log(data)
   switch(data.mode){
     case 'landing':
     case 'debug':
       break;
+    case 'game':
+      if(Object.keys(gameData).includes(data.code)){
+        for(var i = 0; i < gameData[data.code].players.length; i++){
+          console.log(`Stored game_id ${gameData[data.code].players[i].socket_id} Given game_id ${data.game_socket_id} socket_id ${data.socket_id} present ${gameData[data.code].players[i].present}`)
+          if(gameData[data.code].players[i].socket_id == data.game_socket_id && !gameData[data.code].players[i].present){
+            gameData[data.code].players[i].present = true // Player is now present
+            addToGame(data.socket_id,data.code,gameData[data.code],gameData[data.code].players[i].id) // Add player to game
+            gameData[data.code].players[i].socket_id = data.socket_id // Update stored socket id to the new socket id
+            console.log(`Updated stored game_id to ${gameData[data.code].players[i].socket_id}`)
+          }
+        }
+      }else{
+        console.log(`No room ${data.code}`)
+      }
+      break
   }
-}
-function disconnect() {
-  delete connections[gameSocket.id]
 }

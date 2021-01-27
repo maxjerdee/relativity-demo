@@ -2,6 +2,8 @@ $(function() { // Module Format
   'use strict';
   // Socket.IO 
   var IO = { // Contains bindings and functions triggered by the server
+    connected: false,
+    needLanding: true,
     init: function() { 
     IO.socket = io.connect(); // Socket Object
     IO.bindEvents();
@@ -25,14 +27,11 @@ $(function() { // Module Format
       var pieces = data.address.split(':')
       App.user = pieces[pieces.length - 1]
       const mode = Cookies.getMode();
-      switch(mode){ // Ask for a new question now that we are connected
-        case 'landing':
-        case 'debug':
-          App.newQuestion(true)
-          break;
-        case 'game':
-          break;
+      if(IO.needLanding){
+        IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
+        IO.needLanding = false
       }
+      IO.connected = true
     },
     newQuestionResponse : function(data) {
       App.displayQuestion(data.question)
@@ -47,12 +46,11 @@ $(function() { // Module Format
     joinGameResponse : function(data){
       switch(data.response){
         case 'success':
-          Cookies.setCookie('mode','game',60/(24*60))
+          Cookies.setCookie('mode','game',60/(24*60)) // Store game information for 1 hour
           Cookies.setCookie('code',data.code,60/(24*60))
-          //Cookies.setCookie('socket_id',IO.socket_id,60/(24*60))
+          Cookies.setCookie('game_socket_id',IO.socket.id,60/(24*60))
           App.$gameCover.html('')
           App.showInitScreen()
-          console.log('set id to ' + data.playerId)
           App.playerId = data.playerId
           App.playerRole = data.gameState.players[App.playerId].role
           IO.updateGameState(data.gameState)
@@ -73,7 +71,6 @@ $(function() { // Module Format
      * @param {*} gameState 
      */
     updateGameState : function(gameState){
-      console.log(gameState)
       IO.updatePlayerState(gameState)
       App.gamePhase = gameState.gamePhase;
       App.maxTime = gameState.maxTime;
@@ -105,7 +102,6 @@ $(function() { // Module Format
             $('#option3-text').html(gameState['choices'][2]['title']);
           }else{
             $('#question-header').html(App.$templateChoosingWait);
-            console.log( gameState.players[gameState.chooser].name);
             $('#waiting-message').html("Waiting for " + gameState.players[gameState.chooser].name + " to choose an article...")
           }
             $('#question-text').html(data['question']);
@@ -133,7 +129,6 @@ $(function() { // Module Format
       }
     },
     updatePlayerStateWrapper : function(data){
-      console.log('updatePlayerStateWrapper'+data.gameState)
       IO.updatePlayerState(data.gameState)
     },
     updatePlayerState : function(gameState){
@@ -145,11 +140,11 @@ $(function() { // Module Format
       $('#player-list').html('');
       for(var i = 0; i < gameState.players.length; i++){
         var playerData = gameState.players[i];
-        $('#player-list').append('<div class="player-wrapper col-6"><div class="player green"><div class="player-top row"><div class="col-8 p-0"><p class="player-name">'+playerData.name+'</p></div><div class="text-right col-4 p-0"><p class="player-score">'+playerData.score+'</p></div></div><div class="row player-bottom"><div class="col-8 p-0 status-wrapper"><div class="player-hl"></div><div class="player-status">'+playerData.status+'</div></div><div class="col-4 p-0 text-right"><p>'+playerData.questionScore+'</p></div></div></div></div>');
+        if(playerData.present){
+          $('#player-list').append('<div class="player-wrapper col-6"><div class="player green"><div class="player-top row"><div class="col-8 p-0"><p class="player-name">'+playerData.name+'</p></div><div class="text-right col-4 p-0"><p class="player-score">'+playerData.score+'</p></div></div><div class="row player-bottom"><div class="col-8 p-0 status-wrapper"><div class="player-hl"></div><div class="player-status">'+playerData.status+'</div></div><div class="col-4 p-0 text-right"><p>'+playerData.questionScore+'</p></div></div></div></div>');
+        }
       }
       //Still want to remove the player's Guess Button
-      console.log('updatePlayerState '+gameState.players)
-      console.log('updatePlayerState '+App.playerId)
       if(gameState.players[App.playerId].status != '...'){
         $('#guess-button').hide()
       }
@@ -194,7 +189,6 @@ $(function() { // Module Format
      */
     showInitScreen: function(){
       const mode = Cookies.getMode();
-      console.log('initMode' + mode);
       switch(mode){
         case 'landing':
           App.$gameArea.html(App.$templateLanding);
@@ -206,7 +200,11 @@ $(function() { // Module Format
           App.$gameArea.html(App.$templateGame)
           break;
       }
-      IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id}) // Server-side startup
+      if(IO.connected && IO.needLanding){ // Delay server-side handleLanding until a connection has been established. If it hasn't yet, delay to onConnected()
+        IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
+        IO.needLanding = false
+      }
+      
     },
     /**
      * Return to home screen. Usually called by clicking the banner
@@ -215,6 +213,7 @@ $(function() { // Module Format
       if(Cookies.getMode() != 'landing'){
         Cookies.setCookie('mode','landing');
         App.showInitScreen();
+        IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
       }
     },
     /**
@@ -272,8 +271,6 @@ $(function() { // Module Format
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
-      console.log('newQuestion '+ first)
-      console.log('newQuestion '+ IO.socket.id)
       IO.socket.emit('newQuestion',{'socket_id':IO.socket.id});
     },
     /**
@@ -394,7 +391,6 @@ $(function() { // Module Format
         IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val(),'score_mode':$('#scoreMode').val()})
       },
       joinGame : function(){
-        console.log('joinGame: '+IO.socket.id)
         IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'code':$('#join-code').val().toUpperCase()})
       }
     },
