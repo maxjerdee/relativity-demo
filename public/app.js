@@ -17,8 +17,9 @@ $(function() { // Module Format
       IO.socket.on('newQuestionResponse', IO.newQuestionResponse);
       IO.socket.on('submitAnswerResponse', IO.submitAnswerResponse);
       IO.socket.on('joinGameResponse', IO.joinGameResponse);
-      IO.socket.on('updateGameState', IO.updateGameState);
+      IO.socket.on('updateGameState', IO.updateGameStateWrapper);
       IO.socket.on('updatePlayerState', IO.updatePlayerStateWrapper);
+      IO.socket.on('goLanding',App.goLanding);
     },
     /**
      * Function called when server confirms connection
@@ -66,6 +67,9 @@ $(function() { // Module Format
           $('#error-message').html('Lobby Full')
           break;
       }
+    },
+    updateGameStateWrapper : function(data){
+      IO.updateGameState(data.gameState)
     },
     /**
      * Update the UI to reflect the current gameState. Includes calling updatePlayerState()
@@ -129,7 +133,7 @@ $(function() { // Module Format
             break;
       }
     },
-    updatePlayerStateWrapper : function(data){
+    updatePlayerStateWrapper : function(data){ 
       IO.updatePlayerState(data.gameState)
     },
     updatePlayerState : function(gameState){
@@ -215,6 +219,7 @@ $(function() { // Module Format
       if(Cookies.getMode() != 'landing'){
         Cookies.setCookie('mode','landing');
         App.showInitScreen();
+        IO.socket.emit('handleLanding',{'mode':'landing','socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
         IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
       }
     },
@@ -393,7 +398,7 @@ $(function() { // Module Format
         IO.socket.emit('hostGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val(),'score_mode':$('#scoreMode').val()})
       },
       joinGame : function(){
-        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'name':$('#join-name').val(),'code':$('#join-code').val().toUpperCase()})
+        IO.socket.emit('joinGame', {'user':App.user,'socket_id':IO.socket.id,'game_socket_id':Cookies.getCookie('game_socket_id'),'name':$('#join-name').val(),'code':$('#join-code').val().toUpperCase()})
       }
     },
     // Debug Mode Functions
