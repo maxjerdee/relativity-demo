@@ -28,6 +28,7 @@ $(function() { // Module Format
       App.user = pieces[pieces.length - 1]
       const mode = Cookies.getMode();
       if(IO.needLanding){
+        App.newQuestion()
         IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
         IO.needLanding = false
       }
@@ -201,6 +202,7 @@ $(function() { // Module Format
           break;
       }
       if(IO.connected && IO.needLanding){ // Delay server-side handleLanding until a connection has been established. If it hasn't yet, delay to onConnected()
+        App.newQuestion()
         IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
         IO.needLanding = false
       }

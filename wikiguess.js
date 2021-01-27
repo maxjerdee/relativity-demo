@@ -120,6 +120,7 @@ interactions:"[]"
 /* GENERAL FUNCTIONS */
 async function newQuestion(data){
   const question = await randomQuestion();
+  console.log(question)
   await io.to(data.socket_id).emit('newQuestionResponse',{'question': question})
 }
 /**

@@ -19,7 +19,7 @@ app// Serve static html, js, css, and image files from the 'public' directory
     .use(express.static(path.join(__dirname,'public')))
     .use(express.static('./public'))
     .set('views', './public')
-    .set('view engine', 'pug')
+    .set('view engine', 'pug') 
     .get('/', (req, res) => {
         res.render('index')
 });

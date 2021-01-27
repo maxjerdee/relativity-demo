@@ -104,10 +104,6 @@ body {
           transition: 0.2s;
           width: 200px;
         }
-        .game-button:hover {
-          background-color: rgb(180, 255, 205);
-          cursor: pointer;
-        }
           .game-button-text {
             line-height: 1em;
             margin: 5px;
