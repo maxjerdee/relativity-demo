@@ -194,7 +194,7 @@ block content
         .col#show-answer-col.text-right
           .button.blue-hoverable#guess-button
             p.button-text Guess
-          p.input-label#waiting 
+          p.input-label#score 
       .row#feedback-row.text-center
         #feedback-wrapper
           .button.fast-button.blue-hoverable#like-button
@@ -225,16 +225,16 @@ block content
             p.option-text#option3-text Option 3
   //- CHOOSING WAIT
   script#template-choosing-wait(type="text/template")
-    .orange
+    .orange.text-center.p-2
       p.button-text#waiting-message Waiting for player to choose article...
   //- WAITING HOST
   script#template-waiting-host(type="text/template")
-    .orange
+    .orange.text-center.p-2
       .button.orange-hoverable#start-game
         p.button-text Start Game
   //- WAITING PLAYER 
   script#template-waiting-player(type="text/template")
-    .orange
+    .orange.text-center.p-2
       p.button-text Waiting for host to start game...
   //- HOST GAME
   script#template-host(type="text/template")
