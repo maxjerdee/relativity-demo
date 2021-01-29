@@ -155,7 +155,7 @@ async function submitAnswer(data){
       io.to(data.socket_id).emit('showAnswer',{'question':question,'questionScore':questionScore})
       break
     case 'game':
-      if(Object.keys(gameData).includes(data.code)){
+      if(Object.keys(gameData).includes(data.code) && gameData[data.code].gamePhase == 'guessing'){
         var player =  gameData[data.code].players[data.playerId]
         player.guess = data.guess
         gameData[data.code].players[data.playerId].status = 'Guessed' // Full for the assignment
@@ -338,9 +338,9 @@ async function advanceGamePhase(code,option=1){
       startQuestionTimer(code)
       break
     case 'guessing':
+      calculateScore(code)
       io.to(code).emit('showAnswer',{'gameState':gameData[code]})
       gameData[code].questionNumber++
-      calculateScore(code)
       if(gameData[code].questionNumber > gameData[code].maxQuestions){
         endGame(code)
         gameData[code].gamePhase = 'over'

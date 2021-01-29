@@ -135,6 +135,14 @@ $(function() { // Module Format
             App.displayQuestion(gameState.question);
             if(gameState.players[App.playerId].status != '...'){
                 $('#guess').hide()
+            }else{
+                // Need to make a new Enter Key Listener
+                $("#guess-input").keyup(function(event){
+                  if (event.keyCode === 13) {
+                    console.log(`Key logged on guess-input ${event.keyCode}`)
+                    App.submitAnswer();
+                  }
+                });
             }
             break;
       }
