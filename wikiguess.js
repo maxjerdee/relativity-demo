@@ -151,15 +151,14 @@ async function submitAnswer(data){
       if(ratio <= 0){
         ratio = 10**3;
       }
-      const score = Math.round(Math.max(100 - 100*Math.abs(Math.log10(ratio)),0));
-      io.to(data.socket_id).emit('showAnswer',{'question': question, 'score': score})
+      const questionScore = Math.round(Math.max(100 - 100*Math.abs(Math.log10(ratio)),0));
+      io.to(data.socket_id).emit('showAnswer',{'question':question,'questionScore':questionScore})
       break
     case 'game':
       if(Object.keys(gameData).includes(data.code)){
         var player =  gameData[data.code].players[data.playerId]
         player.guess = data.guess
         gameData[data.code].players[data.playerId].status = 'Guessed' // Full for the assignment
-        console.log('advanceCheck')
         var res = await checkFinishedGuessing(data.code)
         console.log(res)
         if(!res){
@@ -173,15 +172,17 @@ async function submitAnswer(data){
 }
 async function checkFinishedGuessing(code){
   var finishedGuessing = true
-  for(var i = 0; i < gameData[code].players.length; i++){ // Check if all present players have guessed
-    if(gameData[code].players[i].present && gameData[code].players[i].status != 'Guessed'){
-      console.log(`${gameData[code].players[i].name}, ${gameData[code].players[i].present}, ${gameData[code].players[i].status}`)
-      finishedGuessing = false
+  if(Object.keys(gameData).includes(code)){
+    for(var i = 0; i < gameData[code].players.length; i++){ // Check if all present players have guessed
+      if(gameData[code].players[i].present && gameData[code].players[i].status != 'Guessed'){
+        console.log(`${gameData[code].players[i].name}, ${gameData[code].players[i].present}, ${gameData[code].players[i].status}`)
+        finishedGuessing = false
+      }
     }
-  }
-  if(finishedGuessing){
-    await advanceGamePhase(code)
-    io.to(code).emit('updateGameState',{'gameState':gameData[code]})
+    if(finishedGuessing){
+      await advanceGamePhase(code)
+      io.to(code).emit('updateGameState',{'gameState':gameData[code]})
+    }
   }
   console.log(`Checked room ${code}, ${finishedGuessing}`)
   return finishedGuessing
@@ -316,8 +317,8 @@ async function advanceGamePhase(code,option=1){
         }
       }
       await populateChoices(code)
-      gameData[code].players[gameData[code].chooser].status = 'Choosing'
       gameData[code].gamePhase = 'choosing'
+      startChooseTimer(code)
       break
     case 'choosing':
       if(gameData[code].questionNumber != 1){ // If it isn't the first question, tell the clients to submit their feedback at this point
@@ -337,10 +338,9 @@ async function advanceGamePhase(code,option=1){
       startQuestionTimer(code)
       break
     case 'guessing':
-      calculateScore(code)
-      console.log(gameData[code])
       io.to(code).emit('showAnswer',{'gameState':gameData[code]})
       gameData[code].questionNumber++
+      calculateScore(code)
       if(gameData[code].questionNumber > gameData[code].maxQuestions){
         endGame(code)
         gameData[code].gamePhase = 'over'
@@ -354,8 +354,8 @@ async function advanceGamePhase(code,option=1){
             break
           }
         }
-        gameData[code].players[gameData[code].chooser].status = 'Choosing'
         gameData[code].gamePhase = 'choosing'
+        startChooseTimer(code)
       }
       break
   }
@@ -437,17 +437,46 @@ async function startQuestionTimer(code){
   // Decrement the displayed timer value on each 'tick'
   async function countItDown(){
     timeLeft -= 1
-    if(gameData[code].gamePhase == 'guessing'){
-      if(timeLeft == 10){
-        io.to(code).emit('resyncQuestionTimer')
-      }
-      if(timeLeft == 0){ // Force Guess
-          io.to(code).emit('forceGuess')
-      }
-      if(timeLeft < 0){
+    if(Object.keys(gameData).includes(code)){
+      if(gameData[code].gamePhase == 'guessing'){
+        if(timeLeft == 10){
+          io.to(code).emit('resyncQuestionTimer')
+        }
+        if(timeLeft == 0){ // Force Guess
+            io.to(code).emit('forceGuess')
+        }
+        if(timeLeft < 0){
+          clearInterval(timer);
+          await advanceGamePhase(code);
+          io.to(code).emit('updateGameState',{'gameState':gameData[code]})
+          return;
+        }
+      }else{
         clearInterval(timer);
-        await advanceGamePhase(code);
-        io.to(code).emit('updateGameState',{'gameState':gameData[code]})
+        return;
+      }
+    }else{
+      clearInterval(timer);
+      return;
+    }
+  }
+}
+async function startChooseTimer(code){
+  const CHOOSE_TIME = 15
+  io.to(gameData[code].players[gameData[code].chooser].socket_id).emit('startChooseTimer',{'chooseTime': CHOOSE_TIME})
+  var timer = setInterval(countItDown,1000);
+  var timeLeft = CHOOSE_TIME
+  // Decrement the displayed timer value on each 'tick'
+  async function countItDown(){
+    timeLeft -= 1
+    if(Object.keys(gameData).includes(code)){
+      if(gameData[code].gamePhase == 'choosing'){
+        if(timeLeft <= 0){ // Force Choose
+          await chooseOption({'code':code,'option':Math.ceil(Math.random()*3)})
+          io.to(code).emit('updateGameState',{'gameState':gameData[code]})
+        }
+      }else{
+        clearInterval(timer);
         return;
       }
     }else{

@@ -23,6 +23,7 @@ $(function() { // Module Format
       IO.socket.on('submitFeedback',App.submitFeedbackWrapper)
       IO.socket.on('gameOver',IO.gameOver)
       IO.socket.on('startQuestionTimer',IO.startQuestionTimer)
+      IO.socket.on('startChooseTimer',IO.startChooseTimer)
       IO.socket.on('forceGuess',App.submitAnswer)
     },
     /**
@@ -44,17 +45,20 @@ $(function() { // Module Format
     showAnswer : function(data) {
       $('#feedback-row').show()
       $('#feedback-row').children().show()
-      const question = data.gameState.question;
+      var question;
       switch(App.mode){
         case 'landing':
+          question = data.question;
+          $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+          $('#score').html('Points: '+data.questionScore);
           break;
         case 'game':
+          question = data.gameState.question;
+          $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+          $('#score').html('Points: '+data.gameState.players[App.playerId].questionScore);
+          $('#score').show();
           break;
       }
-      $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
-      console.log(data.gameState.players[App.playerId].questionScore)
-      $('#score').html('Points: '+data.gameState.players[App.playerId].questionScore);
-      $('#score').show();
     },
     joinGameResponse : function(data){
       switch(data.response){
@@ -187,6 +191,20 @@ $(function() { // Module Format
         timeLeft -= 1
         if(App.gamePhase == 'guessing' && timeLeft >= 0){
           $('#timer').html('Time: ' + timeLeft)
+        }else{
+          clearInterval(timer);
+          return;
+        }
+      }
+    },
+    startChooseTimer: function(data){
+      var timer = setInterval(countItDown,1000);
+      var timeLeft = data.chooseTime
+      // Decrement the displayed timer value on each 'tick'
+      async function countItDown(){
+        timeLeft -= 1
+        if(App.gamePhase == 'choosing' && timeLeft >= 0){
+          $('#choose-timer').html('Time: ' + timeLeft)
         }else{
           clearInterval(timer);
           return;
@@ -341,7 +359,7 @@ $(function() { // Module Format
         case 'game':
           $('#feedback-row').hide();
           $('#feedback-row').children().hide();
-          $('#question-text').html(question.question + ' (<i>' + question.title + '</i>)')
+          $('#question-text').html(question.question.replace('[???]','<b>[???]</b>') + ' (<i>' + question.title + '</i>)')
           break;
         case 'debug':
           $('#question-text').html(question.question.replace('???', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
@@ -400,6 +418,14 @@ $(function() { // Module Format
     submitAnswer(){
       $('#guess-button').hide();
       App.guess = $('#guess-input').val()
+      console.log({
+        'socket_id':IO.socket.id,
+        'question_id': App.question_id,
+        'guess': App.guess,
+        'playerId':App.playerId,
+        'code': App.code,
+        'mode': App.mode
+      })
       IO.socket.emit('submitAnswer',{
                                       'socket_id':IO.socket.id,
                                       'question_id': App.question_id,

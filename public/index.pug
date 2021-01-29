@@ -212,7 +212,11 @@ block content
   //- CHOOSING
   script#template-choosing(type="text/template")
     .orange.col.options
-      p.question-header Select an Article:
+      .row
+        .col
+          p.question-header Select an Article:
+        .col.text-right
+          p.question-header#choose-timer Time: 15
       .row#options-wrapper
         .col-md-4.option-col
           .option-button.orange-hoverable#option1
