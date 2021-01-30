@@ -25,18 +25,20 @@ block content
                   .game-button.green-hoverable#show-rules-button.m-0
                     p.button-text Rules
             .play-wrapper.row
-              .col-6-sm.game-buttom-wrapper
-                .game-button.green-hoverable#public-game-button
-                  p.game-button-text Public Game
+              //-
+                .col-6-sm.game-buttom-wrapper
+                  .game-button.green-hoverable#public-game-button
+                    p.game-button-text Public Game
               .col-6-sm.game-buttom-wrapper
                 .game-button.green-hoverable#host-game-button
                   p.game-button-text Host Game
               .col-6-sm.game-buttom-wrapper
                 .game-button.green-hoverable#join-game-button
                   p.game-button-text Join Game
-              .col-6-sm.game-buttom-wrapper
-                .game-button.green-hoverable#debug-mode-button
-                  p.game-button-text Debug Mode
+              //-
+                .col-6-sm.game-buttom-wrapper
+                  .game-button.green-hoverable#debug-mode-button
+                    p.game-button-text Debug Mode
         .col-sm-8#question-content
           .random-question.blue
             .row
@@ -272,12 +274,12 @@ block content
       #join-game-menu.green
         .input-group.mb-3
           .input-group-prepend
-            .input-group-text Name
-          input.form-control#join-name(aria-label='Name')
-        .input-group.mb-3
-          .input-group-prepend
             .input-group-text Code
           input.form-control#join-code(aria-label='Code')
+        .input-group.mb-3
+          .input-group-prepend
+            .input-group-text Name
+          input.form-control#join-name(aria-label='Name')
         .game-button.green-hoverable#join-game
           p.game-button-text Join Game
         p#error-message 

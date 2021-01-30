@@ -33,8 +33,7 @@ $(function() { // Module Format
       var pieces = data.address.split(':')
       App.user = pieces[pieces.length - 1]
       if(IO.needLanding){
-        App.newQuestion()
-        IO.socket.emit('handleLanding',{'mode':Cookies.getMode(),'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
+        App.goLanding()
         IO.needLanding = false
       }
       IO.connected = true
@@ -275,8 +274,7 @@ $(function() { // Module Format
           break;
       }
       if(IO.connected && IO.needLanding){ // Delay server-side handleLanding until a connection has been established. If it hasn't yet, delay to onConnected()
-        App.newQuestion()
-        IO.socket.emit('handleLanding',{'mode':Cookies.getMode(),'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
+        App.goLanding()
         IO.needLanding = false
       }
       
@@ -289,7 +287,19 @@ $(function() { // Module Format
       Cookies.setCookie('mode',App.mode);
       App.showInitScreen();
       IO.socket.emit('handleLanding',{'mode':'landing','socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
-      IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
+      //IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
+      var timer = setInterval(countItDown,500);
+      var triesLeft = 10
+      // Decrement the displayed timer value on each 'tick'
+      function countItDown(){
+        triesLeft -= 1
+        if($('#question-text').html()=='Loading Question...' && triesLeft > 0){
+          IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
+        }else{
+          clearInterval(timer);
+          return;
+        }
+      }
     },
     /**
      * Bind events, such as clicking on objects, with js function calls
