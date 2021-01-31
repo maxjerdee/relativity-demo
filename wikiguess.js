@@ -398,45 +398,43 @@ function calculateScore(code){
       }
     }
   }
-  console.log(diffs)
-  var sorted_diffs = diffs.sort(function(first, second) { // Sort decreasing, but put the -1's in front
-    if(first[0] == -1){
-      if(second[0] == -1){
-        return 0
-      }
-      return -1
-    }
-    if(second[0] == -1){
-      return 1
-    }
-    return second[0] - first[0];
-  });
-  
-  console.log(sorted_diffs)
-  var last_diff = sorted_diffs[0][0]
-  var num_tie = 0
-  for(var i = 0; i < sorted_diffs.length; i++){
-    if(sorted_diffs[i][0] != -1){
-      console.log(sorted_diffs[i][0])
-      if(last_diff != sorted_diffs[i][0]){
-        console.log(`${last_diff} - ${i} - ${num_tie}`)
-        if(last_diff != -1){
-          for(var back_i = 1; back_i <= num_tie; back_i++){ // Backtrack and assign the averaged score to the ties
-            scores[sorted_diffs[i - back_i][1]] = Math.ceil(POINT_DISTRIBUTION.slice(i-num_tie,i).reduce((pv, cv) => pv + cv, 0)/num_tie);
-          }
+  if(gameData[code].scoreMode != "normal"){
+    var sorted_diffs = diffs.sort(function(first, second) { // Sort decreasing, but put the -1's in front
+      if(first[0] == -1){
+        if(second[0] == -1){
+          return 0
         }
-        num_tie = 1
-        last_diff = sorted_diffs[i][0]
-        console.log(`Last Diff ${last_diff}`)
-      }else{
-        num_tie++
+        return -1
+      }
+      if(second[0] == -1){
+        return 1
+      }
+      return second[0] - first[0];
+    });
+    var last_diff = sorted_diffs[0][0]
+    var num_tie = 0
+    for(var i = 0; i < sorted_diffs.length; i++){
+      if(sorted_diffs[i][0] != -1){
+        console.log(sorted_diffs[i][0])
+        if(last_diff != sorted_diffs[i][0]){
+          console.log(`${last_diff} - ${i} - ${num_tie}`) 
+          if(last_diff != -1){
+            for(var back_i = 1; back_i <= num_tie; back_i++){ // Backtrack and assign the averaged score to the ties
+              scores[sorted_diffs[i - back_i][1]] = Math.ceil(POINT_DISTRIBUTION.slice(i-num_tie,i).reduce((pv, cv) => pv + cv, 0)/num_tie);
+            }
+          }
+          num_tie = 1
+          last_diff = sorted_diffs[i][0]
+          console.log(`Last Diff ${last_diff}`)
+        }else{
+          num_tie++
+        }
       }
     }
+    for(var back_i = 1; back_i <= num_tie; back_i++){ // Backtrack and assign the averaged score to the ties
+      scores[sorted_diffs[sorted_diffs.length - back_i][1]] = Math.ceil(POINT_DISTRIBUTION.slice(sorted_diffs.length-num_tie,sorted_diffs.length).reduce((pv, cv) => pv + cv, 0)/num_tie);
+    }
   }
-  for(var back_i = 1; back_i <= num_tie; back_i++){ // Backtrack and assign the averaged score to the ties
-    scores[sorted_diffs[sorted_diffs.length - back_i][1]] = Math.ceil(POINT_DISTRIBUTION.slice(sorted_diffs.length-num_tie,sorted_diffs.length).reduce((pv, cv) => pv + cv, 0)/num_tie);
-  }
-  console.log(scores)
   // Write scores to gameData
   for(var i = 0; i < gameData[code].players.length; i++){
     if(gameData[code].players[i].present){
