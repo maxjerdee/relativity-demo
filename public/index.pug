@@ -54,11 +54,9 @@ block content
               .col#guess-text-col.l-370
                 p.input-label.l-370 Guess: 
               .col#input-col
-                input#guess-input(type="number")
-              .col#units-col
-                p (million)
+                input#guess-input(type="text")
               .col#show-answer-col.text-right
-                .button.blue-hoverable#guess-button
+                .button.blue-hoverable.deactivated#guess-button
                   p.button-text.l-650 Show Answer
                   p.button-text.s-650 Answer
                 p.input-label#score 
@@ -148,6 +146,7 @@ block content
                   .player-wrapper.col-6
                     .player
           .col-sm-7.p-3
+            #host-header
             #question-header
             #question-wrapper
   //- DEBUG
@@ -190,11 +189,9 @@ block content
       p#question-text Loading Question...
       .row#guess-row
         .col#input-col-guessing
-          input#guess-input(type="number")
-        .col#units-col
-          p (million)
+          input#guess-input(type="text")
         .col#show-answer-col.text-right
-          .button.blue-hoverable#guess-button
+          .button.blue-hoverable.deactivated#guess-button
             p.button-text Guess
           p.input-label#score 
       .row#feedback-row.text-center
@@ -233,6 +230,11 @@ block content
   script#template-choosing-wait(type="text/template")
     .orange.text-center.p-2
       p.button-text#waiting-message Waiting for player to choose article...
+  //- HOST PAUSE
+  script#template-host-pause(type="text/template")
+    .orange.text-center.p-2
+      .button.orange-hoverable#pause-game
+        p.button-text Pause Game
   //- WAITING HOST
   script#template-waiting-host(type="text/template")
     .orange.text-center.p-2
@@ -275,11 +277,11 @@ block content
         .input-group.mb-3
           .input-group-prepend
             .input-group-text Code
-          input.form-control#join-code(aria-label='Code')
+          input.form-control.text-right#join-code(aria-label='Code')
         .input-group.mb-3
           .input-group-prepend
             .input-group-text Name
-          input.form-control#join-name(aria-label='Name')
+          input.form-control.text-right#join-name(aria-label='Name')
         .game-button.green-hoverable#join-game
           p.game-button-text Join Game
         p#error-message 

@@ -3,7 +3,7 @@ $(function() { // Module Format
   // Socket.IO 
   var IO = { // Contains bindings and functions triggered by the server
     connected: false,
-    needLanding: true,
+    needRejoin: true,
     init: function() { 
     IO.socket = io.connect(); // Socket Object
     IO.bindEvents();
@@ -32,9 +32,9 @@ $(function() { // Module Format
     onConnected : function(data) {
       var pieces = data.address.split(':')
       App.user = pieces[pieces.length - 1]
-      if(IO.needLanding){
-        App.goLanding()
-        IO.needLanding = false
+      if(IO.needRejoin){ // Check if we need to trigger a rejoin event (check with cookies if the user is currently in a game)
+        IO.checkRejoin()
+        IO.needRejoin = false
       }
       IO.connected = true
     },
@@ -50,6 +50,7 @@ $(function() { // Module Format
           question = data.question;
           $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
           $('#score').html('Points: '+data.questionScore);
+          $('#score').show();
           break;
         case 'game':
           question = data.gameState.question;
@@ -134,14 +135,6 @@ $(function() { // Module Format
             App.displayQuestion(gameState.question);
             if(gameState.players[App.playerId].status != '...'){
                 $('#guess').hide()
-            }else{
-                // Need to make a new Enter Key Listener
-                $("#guess-input").keyup(function(event){
-                  if (event.keyCode === 13) {
-                    console.log(`Key logged on guess-input ${event.keyCode}`)
-                    App.submitAnswer();
-                  }
-                });
             }
             break;
       }
@@ -217,6 +210,13 @@ $(function() { // Module Format
           return;
         }
       }
+    },
+    checkRejoin: function(){
+      var mode = Cookies.getMode()
+      if(mode == "landing"){
+        App.goLanding()
+      }
+      IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
     }
   }
   var App = {
@@ -274,7 +274,7 @@ $(function() { // Module Format
           break;
       }
       if(IO.connected && IO.needLanding){ // Delay server-side handleLanding until a connection has been established. If it hasn't yet, delay to onConnected()
-        App.goLanding()
+        IO.checkRejoin()
         IO.needLanding = false
       }
       
@@ -286,12 +286,9 @@ $(function() { // Module Format
       App.mode = 'landing'
       Cookies.setCookie('mode',App.mode);
       App.showInitScreen();
-      IO.socket.emit('handleLanding',{'mode':'landing','socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
-      //IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
       var timer = setInterval(countItDown,500);
       var triesLeft = 10
-      // Decrement the displayed timer value on each 'tick'
-      function countItDown(){
+      function countItDown(){ // Ask the server to generate a question 10 times in case the database connection is taking a long time to establish
         triesLeft -= 1
         if($('#question-text').html()=='Loading Question...' && triesLeft > 0){
           IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
@@ -311,7 +308,8 @@ $(function() { // Module Format
       App.$doc.on('click', '#like-button', App.like);
       App.$doc.on('click', '#dislike-button', App.dislike);
       App.$doc.on('click', '#report-button', App.report);
-      App.$doc.on('click', '#guess-button', App.submitAnswer);
+      App.$doc.on('click', '#guess-button', App.clickHandler);
+      App.$doc.on('keyup', '#guess-input', App.inputHandler);
       // Landing Page 
       App.$doc.on('click', '#show-rules-button', App.Landing.showRules);
       App.$doc.on('click', '#public-game-button', App.Landing.goPublic);
@@ -327,12 +325,6 @@ $(function() { // Module Format
       App.$doc.on('click', '#option2', App.Game.option2);
       App.$doc.on('click', '#option3', App.Game.option3);
       App.$doc.on('click', '#play-again', App.Landing.hostGameMenu);
-      $("#guess-input").keyup(function(event){
-        if (event.keyCode === 13) {
-          console.log(`Key logged on guess-input ${event.keyCode}`)
-          App.submitAnswer();
-        }
-      });
       // Debug Page
     },
     // General Functions called by multiple modes
@@ -372,6 +364,8 @@ $(function() { // Module Format
     displayQuestion : function(question){
       App.question_id = question._id
       $('#guess-input').val('');
+      $('#guess-input').prop('disabled',false)
+      $('#guess-input').focus();
       switch(App.mode){
         case 'landing':
         case 'game':
@@ -382,13 +376,6 @@ $(function() { // Module Format
         case 'debug':
           $('#question-text').html(question.question.replace('???', question.plain_answer) + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
           break;
-      }
-      if(question.num_answer >= 10**6){ // Display the unit millions if the answer is >=1000000
-        $('#units-col').show()
-        $('#units-col').children().show()
-      }else{
-        $('#units-col').hide()
-        $('#units-col').children().hide()
       }
     },
     like : function(question){
@@ -434,16 +421,12 @@ $(function() { // Module Format
      * Guess answer to the current question
      */
     submitAnswer(){
+      App.guess = App.answerValidation($('#guess-input').val(), true)
+      if(!App.guess){
+        App.guess = 0
+      }
       $('#guess-button').hide();
-      App.guess = $('#guess-input').val()
-      console.log({
-        'socket_id':IO.socket.id,
-        'question_id': App.question_id,
-        'guess': App.guess,
-        'playerId':App.playerId,
-        'code': App.code,
-        'mode': App.mode
-      })
+      $('#guess-input').prop('disabled',true)
       IO.socket.emit('submitAnswer',{
                                       'socket_id':IO.socket.id,
                                       'question_id': App.question_id,
@@ -452,6 +435,32 @@ $(function() { // Module Format
                                       'code': App.code,
                                       'mode': App.mode
                                     });
+    },
+    answerValidation(string, force = false){
+      const valid_units = {" ":1,"k":10**3,"m":10**6,"b":10**9,"t":10**12,"thousand":10**3,"million":10**6,"billion":10**9,"trillion":10**12,"quadrillion":10**12,"quintillion":10**15}
+      string = string.toLowerCase()
+      string = string.replaceAll(/[^a-z\d\.]/g, '')
+      let unit_re = /[a-z]+$/
+      var unit = string.match(unit_re)
+      if(unit){
+        unit = unit[0]
+      }else{
+        unit = " "
+      }
+      string = string.replace(unit_re, '')
+      let letter_re = /[a-z]+/
+      var float = parseFloat(string)
+      if(!float){
+        return NaN
+      }
+      if(Object.keys(valid_units).includes(unit)){
+        return float * valid_units[unit]
+      }else{
+        if(force){
+          return float
+        }
+        return NaN
+      }
     },
     /**
      * Function called by buttons to submit feedback, pulled from App.feedback
@@ -470,6 +479,22 @@ $(function() { // Module Format
                         };
       console.log('Feedback: '+feedback)
       IO.socket.emit('submitFeedback',feedback);
+    },
+    inputHandler(event){
+      var valid = App.answerValidation($('#guess-input').val())
+      if(valid){
+        $('#guess-button').removeClass('deactivated')
+      }else{
+        $('#guess-button').addClass('deactivated')
+      }
+      if(event.key == "Enter" && !$('#guess-button').hasClass('deactivated')){
+        App.submitAnswer();
+      }
+    },
+    clickHandler(){
+      if(!$('#guess-button').hasClass('deactivated')){
+        App.submitAnswer();
+      }
     },
     // Client-side functions called from landing (mostly bound to buttons)
     Landing : {

@@ -47,23 +47,26 @@ exports.initGame = function(sio, socket, address){
   // Saves the Socket.IO arguments to the global variables
   io = sio; 
   gameSocket = socket;
-  connections[socket.id] = {'room':'none','socket':socket}
-  gameSocket.emit('connected', {'address': address}); // Tell client server is live
-  gameSocket.on('disconnect', disconnect);
+  connections[socket.id] = {'room':'none','socket':socket} // Add this socket to conenctions, which stores all active connections along with their associated room in order to manage disconnections
+  gameSocket.emit('connected', {'address': address}); // Tell client server is live, and pass the address which contains the IP
+  gameSocket.on('disconnect', disconnect); // Triggered by socket.io disconnections
   // General Events (API)
-  gameSocket.on('submitFeedback', submitFeedback);
-  gameSocket.on('newQuestion', newQuestion); // Emitted by the client-side App.newQuestion()
-  gameSocket.on('submitAnswer', submitAnswer); // Emitted by the client-side App.newQuestion()
+  gameSocket.on('submitFeedback', submitFeedback); // Store some feedback in the database
+  gameSocket.on('newQuestion', newQuestion); // Generate and return a new question
+  gameSocket.on('submitAnswer', submitAnswer); // Submit an answer for judgement
   // Landing Events
-  gameSocket.on('hostGame', hostGame); 
-  gameSocket.on('joinGame', joinGame); 
+  gameSocket.on('hostGame', hostGame); // Start a game, return with gameState
+  gameSocket.on('joinGame', joinGame); // Join an existing game, return with exit status, and gameState if successful
   // Debug Events
   // Game Events
-  gameSocket.on('startGame',startGame);
-  gameSocket.on('chooseOption',chooseOption);
+  gameSocket.on('startGame',startGame); // Start the game with given room code
+  gameSocket.on('chooseOption',chooseOption); // Choose an option
   // Routing
-  gameSocket.on('handleLanding',handleLanding)
+  gameSocket.on('checkRejoin', checkRejoin) // Client asks to rejoin a given room code. Check if a player with the claimed socket ID is not present
 }
+/**
+ * Triggers by a socket disconnect. Searches the list of connections for one that is no longer connected, and registers that player is now absent
+ */
 async function disconnect(){ // This isn't a great way to do this, but having trouble identifying where the disconnect event came from.
   for (let [key, value] of Object.entries(connections)) {
     if(!value.socket.connected){
@@ -75,11 +78,8 @@ async function disconnect(){ // This isn't a great way to do this, but having tr
     }
   }
 }
-/**API
- * Functions called by all sorts of screens 
- */
 /**
- * @returns Random question drawn from database
+ * Get a question from the database by its _id 
  */
 async function getQuestionById(question_id){
   var result = {}
@@ -90,25 +90,19 @@ async function getQuestionById(question_id){
   } 
   return result
 }
+/**
+ * Return a random question from the database
+ */
 async function randomQuestion(){
-  /** Sample Question:
-   * _id:45
-question_uuid:"5858d9d2-5179-4ad3-993c-8c0f09cd8bc1"
-article_uuid:713
-title:"Android (robot)"
-sent_index:71
-question:"An android is a robot or other artificial being designed to resemble a..."
-num_answer:400
-plain_answer:400
-question_topics:"{47: 0.23409678, 34: 0.17905709, 4: 0.173421}"
-article_topics:"{10: 0.23318933}"
-interactions:"[]" 
-   */
   const NUM_QUESTIONS = 100000
   var question_id = Math.floor(Math.random()*NUM_QUESTIONS);
   return await getQuestionById(question_id)
 }
 /* GENERAL FUNCTIONS */
+/**
+ * Get a new random question and return it to a socket
+ * @param {*} data Contains socket_id
+ */
 async function newQuestion(data){
   const question = await randomQuestion();
   await io.to(data.socket_id).emit('newQuestionResponse',{'question': question})
@@ -144,9 +138,6 @@ async function submitAnswer(data){
     case 'landing':
       const question = await getQuestionById(data.question_id);
       var guess = data.guess;
-      if(question.num_answer >= 10**6){ // given unit was millions
-        guess = guess * 10**6;
-      }
       var ratio = guess/question.num_answer;
       if(ratio <= 0){
         ratio = 10**3;
@@ -372,9 +363,6 @@ function calculateScore(code){
       numPresent++
       var guess = gameData[code].players[i].guess;
       if(guess != -1){
-        if(answer >= 10**6){ // given unit was millions
-          guess *= 10**6;
-        }
         console.log(`Player ${i}, guess ${guess}, answer ${answer}`)
         switch(gameData[code].scoreMode){ // Score differently based on the selected scoring mode
           case 'normal':
@@ -439,20 +427,43 @@ function calculateScore(code){
   for(var i = 0; i < gameData[code].players.length; i++){
     if(gameData[code].players[i].present){
       if(gameData[code].players[i].guess != -1){
-        if(answer >= 10**6){ // given unit was millions
-          gameData[code].players[i].status = gameData[code].players[i].guess + 'mil'
-        }else{
-          gameData[code].players[i].status = gameData[code].players[i].guess
-        }
+        gameData[code].players[i].status = formatNumber(gameData[code].players[i].guess)
         gameData[code].players[i].questionScore = scores[i]
         gameData[code].players[i].score += scores[i]
       }else{
-        gameData[code].players[i].status = 'None'
+        gameData[code].players[i].status = '---'
         gameData[code].players[i].questionScore = 0
         gameData[code].players[i].score += 0
       }
     }
   }
+}
+/**
+ * function to format a number into the string displayed as status
+ * @param {*} number 
+ */
+function formatNumber(number){
+  var adj_number = number
+  var unit = ""
+  if(number > 10**6){
+    adj_number = number/10**6
+    unit = "million"
+    if(number > 10**9){
+      adj_number = number/10**9
+      unit = "billion"
+      if(number > 10**12){
+        adj_number = number/10**12
+        unit = "trillion"
+      }
+    }
+  }
+  if(adj_number == Math.floor(adj_number)){
+    return adj_number + " " + unit
+  }
+  if(adj_number*10 == Math.floor(adj_number*10)){
+    return adj_number.toFixed(1) + " " + unit
+  }
+  return adj_number.toFixed(2) + " " + unit
 }
 function endGame(code){
   io.to(code).emit('gameOver',{'gameState':gameData[code]})
@@ -523,7 +534,7 @@ async function startChooseTimer(code){
  * Do server-side tasks that must be done when a new user joins (including other modes in case of refresh)
  * @param data Socket.IO json with mode, user_id 
  */
-async function handleLanding(data){
+async function checkRejoin(data){
   console.log(data)
   switch(data.mode){
     case 'landing':

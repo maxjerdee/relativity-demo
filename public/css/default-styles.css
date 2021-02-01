@@ -314,6 +314,11 @@ body {
   .grey, .grey-hoverable {
     background-color: #bdbdbd;
   }
+  .deactivated {
+    background-color: #b0bdd3 !important;
+    cursor: not-allowed;
+  }
+  .blue-hoverable:
   @media (hover: hover) {
     .orange-hoverable:hover {
       background-color: #fdf0d6;
