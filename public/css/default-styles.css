@@ -315,7 +315,7 @@ body {
     background-color: #bdbdbd;
   }
   .deactivated {
-    background-color: #b0bdd3 !important;
+    background-color: #c1d0e9 !important;
     cursor: not-allowed;
   }
   .blue-hoverable:
