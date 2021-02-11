@@ -4,10 +4,14 @@ $(function() { // Module Format
   var IO = { // Contains bindings and functions triggered by the server
     connected: false,
     needRejoin: true,
+    session_id: 'none',
+    user: 'unknown',
     init: function() { 
-    IO.socket = io.connect(); // Socket Object
-    IO.bindEvents();
-    },
+      App.mode = Cookies.getCookie('mode')
+      IO.session_id = Cookies.getCookie('session_id')
+      IO.socket = io.connect(); // Socket Object
+      IO.bindEvents();
+    }, 
     /**
      * While connected, Socket.IO will listen to the following events emitted
      * by the Socket.IO server, then run the appropriate function.
@@ -19,59 +23,79 @@ $(function() { // Module Format
       IO.socket.on('joinGameResponse', IO.joinGameResponse);
       IO.socket.on('updateGameState', IO.updateGameStateWrapper);
       IO.socket.on('updatePlayerState', IO.updatePlayerStateWrapper);
-      IO.socket.on('goLanding',App.goLanding);
       IO.socket.on('submitFeedback',App.submitFeedbackWrapper)
       IO.socket.on('gameOver',IO.gameOver)
       IO.socket.on('startQuestionTimer',IO.startQuestionTimer)
       IO.socket.on('startChooseTimer',IO.startChooseTimer)
+      IO.socket.on('joinSessionResponse',IO.joinSessionResponse)
       IO.socket.on('forceGuess',App.submitAnswer)
+      IO.socket.on('goLanding',App.goLanding)
     },
     /**
-     * Function called when server confirms connection
+     * Function called when server confirms session
      */
     onConnected : function(data) {
       var pieces = data.address.split(':')
-      App.user = pieces[pieces.length - 1]
-      if(IO.needRejoin){ // Check if we need to trigger a rejoin event (check with cookies if the user is currently in a game)
-        IO.checkRejoin()
-        IO.needRejoin = false
+      IO.user = pieces[pieces.length - 1]
+      if(IO.session_id == ""){ // No session id -> go to homepage
+        IO.session_id = IO.socket.id
+        Cookies.setCookie('session_id',IO.session_id,1/24) // If there is not an existing browser id in cookies, store this one.
+        App.mode = 'landing'
+        Cookies.setCookie('mode','landing',1/24)
+      }else{ // If there is a session id, ask server to connect to the old session. Will return on joinSessionResponse to update screen
+        console.log(Cookies.getCookie('code'))
+        IO.socket.emit('joinSession',{'socket_id':IO.socket.id,'session_id':IO.session_id,'mode':App.mode,'code':Cookies.getCookie('code')})
       }
-      IO.connected = true
+      App.getLandingQuestion()
+      console.log(`socket_id: ${IO.socket.id.substring(0,4)}, session_id: ${IO.session_id.substring(0,4)}`)
+    },
+    joinSessionResponse : function(data){
+      switch(data.response){
+        case 'success':
+          IO.showGame(data.code,data.playerId,data.gameState)
+          break
+        case 'failed':
+          App.goLandingWrapper()
+          break
+      }
     },
     newQuestionResponse : function(data) {
       App.displayQuestion(data.question)
     },
     showAnswer : function(data) {
+      console.log(`DuringshowAnswer(), mode is ${App.mode}`)
       $('#feedback-row').show()
       $('#feedback-row').children().show()
       var question;
       switch(App.mode){
         case 'landing':
-          question = data.question;
-          $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
-          $('#score').html('Points: '+data.questionScore);
-          $('#score').show();
+          if(Object.keys(data).includes('question')){
+            question = data.question;
+            $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
+            $('#score').html('Points: '+data.questionScore);
+            $('#score').show();
+            $('#guess-button').hide();
+            $('#guess-input').prop('disabled',true)
+          }
           break;
         case 'game':
           question = data.gameState.question;
           $('#question-text').html(question.question.replace('[???]','<b>'+question.plain_answer+'</b>') + ' (<a href=\"https://en.wikipedia.org/?curid='+question.article_uuid+'\" target=\"_blank\">' + question.title + '</a>)')
           $('#score').html('Points: '+data.gameState.players[App.playerId].questionScore);
           $('#score').show();
+          $('#guess-button').hide();
+          $('#guess-input').prop('disabled',true) 
           break;
       }
-    },
+    },/**
+     * After attempting to join a game, returns the result and 
+     * @param {*} data 
+     */
     joinGameResponse : function(data){
       switch(data.response){
         case 'success':
-          App.mode = 'game'
-          App.code = data.code
-          Cookies.setCookie('mode',App.mode,60/(24*60)) // Store game information for 1 hour
-          Cookies.setCookie('code',App.code,60/(24*60))
-          Cookies.setCookie('game_socket_id',IO.socket.id,60/(24*60))
-          App.$gameCover.html('')
-          App.showInitScreen()
-          App.playerId = data.playerId
-          IO.updateGameState(data.gameState)
+        case 'rejoin':
+          IO.showGame(data.code, data.playerId, data.gameState)
           break;
         case 'lobbies_full':
           $('#error-message').html('Lobbies are full')
@@ -82,6 +106,22 @@ $(function() { // Module Format
         case 'lobby_full':
           $('#error-message').html('Lobby Full')
           break;
+      }   
+    },
+    showGame : function(code, playerId, gameState){
+      App.mode = 'game'
+      App.code = code
+      console.log(App.mode)
+      Cookies.setCookie('mode',App.mode,60/(24*60)) // Store game information for 1 hour
+      Cookies.setCookie('code',App.code,60/(24*60))
+      Cookies.setCookie('session_id',IO.session_id,60/(24*60))
+      App.$gameCover.html('')
+      App.showInitScreen()
+      App.playerId = playerId
+      IO.updateGameState(gameState)
+      if(gameState.gamePhase == 'guessing'){
+        console.log(`Rejoined midround, current time is ${gameState.questionTimer}`)
+        IO.startQuestionTimer({'maxTime':gameState.questionTimer})
       }
     },
     updateGameStateWrapper : function(data){
@@ -96,7 +136,7 @@ $(function() { // Module Format
       App.playerRole = gameState.players[App.playerId].role
       App.gamePhase = gameState.gamePhase;
       App.maxTime = gameState.maxTime;
-      $('#room-text').html('Code: ' + gameState.code)
+      $('#code-text').html('Code: ' + gameState.code)
       switch(gameState.scoreMode){
         case 'normal':
           $('#mode-text').html('Mode: Normal')
@@ -210,26 +250,18 @@ $(function() { // Module Format
           return;
         }
       }
-    },
-    checkRejoin: function(){
-      var mode = Cookies.getMode()
-      if(mode == "landing"){
-        App.goLanding()
-      }
-      IO.socket.emit('handleLanding',{'mode':mode,'socket_id':IO.socket.id,'code': Cookies.getCookie('code'),'game_socket_id':Cookies.getCookie('game_socket_id')}) // Server-side startup
     }
   }
   var App = {
     code: '', 
     question_id: -1,
     guess: -1,
-    user: 'unknown',
     feedback: 'none',
     mode: 'landing',
     playerRole: 'player',
     gamePhase: 'waiting',
     maxTime: 30,
-    playerId: -1,
+    playerId: -1, 
     init: function () {
         App.cacheElements();
         App.showInitScreen();
@@ -259,10 +291,11 @@ $(function() { // Module Format
       App.$gameOver = $('#game-over').html();
     },
     /**
-     * Client-side startup
+     * Show the appropriate html template on the client side. Called whenever the 
      */
     showInitScreen: function(){
-      switch(Cookies.getMode()){
+      App.mode = Cookies.getMode()
+      switch(App.mode){
         case 'landing':
           App.$gameArea.html(App.$templateLanding);
           break;
@@ -273,25 +306,37 @@ $(function() { // Module Format
           App.$gameArea.html(App.$templateGame)
           break;
       }
-      if(IO.connected && IO.needLanding){ // Delay server-side handleLanding until a connection has been established. If it hasn't yet, delay to onConnected()
-        IO.checkRejoin()
-        IO.needLanding = false
-      }
-      
     },
     /**
-     * Return to home screen. Usually called by clicking the banner
+     * Called by clicking the title card or a failed rejoin
+     */
+    goLandingWrapper: function(){
+      console.log('titleCard')
+      IO.socket.emit('goLandingSession',{'session_id':IO.session_id})
+      App.goLanding()
+    },
+    /**
+     * Called by the server to tell the rest of the session to go to Landing
      */
     goLanding: function(){
-      App.mode = 'landing'
-      Cookies.setCookie('mode',App.mode);
-      App.showInitScreen();
+      console.log('goLanding')
+      if(App.mode != 'landing'){
+        App.mode = 'landing'
+        Cookies.setCookie('mode',App.mode,1/24)
+        App.showInitScreen()
+        App.getLandingQuestion()
+      }
+    },
+    /**
+     * asks the server for a question up to 10 times while a question hasn't been displayed and the mode is landing
+     */
+    getLandingQuestion: function(){
       var timer = setInterval(countItDown,500);
       var triesLeft = 10
-      function countItDown(){ // Ask the server to generate a question 10 times in case the database connection is taking a long time to establish
+      function countItDown(){ // Ask the server to generate a question 10 times in case the database session is taking a long time to establish
         triesLeft -= 1
-        if($('#question-text').html()=='Loading Question...' && triesLeft > 0){
-          IO.socket.emit('newQuestion',{'socket_id':IO.socket.id})
+        if($('#question-text').html()=='Loading Question...' && triesLeft > 0 && App.mode == 'landing'){
+          IO.socket.emit('newQuestion',{'session_id':IO.session_id})
         }else{
           clearInterval(timer);
           return;
@@ -303,7 +348,7 @@ $(function() { // Module Format
      */
     bindEvents: function () {
       // General 
-      App.$doc.on('click', '#title-container', App.goLanding);
+      App.$doc.on('click', '#title-container', App.goLandingWrapper);
       App.$doc.on('click', '#new-question', App.newQuestionWrapper);
       App.$doc.on('click', '#like-button', App.like);
       App.$doc.on('click', '#dislike-button', App.dislike);
@@ -355,7 +400,7 @@ $(function() { // Module Format
       App.guess = -1;
       App.feedback = 'none';
       Cookies.setCookie('mode',Cookies.getMode(),10/(24*60)) // Refresh cookie
-      IO.socket.emit('newQuestion',{'socket_id':IO.socket.id});
+      IO.socket.emit('newQuestion',{'session_id':IO.session_id});
     },
     /**
      * Called by IO.newQuestionResponse()
@@ -428,7 +473,7 @@ $(function() { // Module Format
       $('#guess-button').hide();
       $('#guess-input').prop('disabled',true)
       IO.socket.emit('submitAnswer',{
-                                      'socket_id':IO.socket.id,
+                                      'session_id':IO.session_id,
                                       'question_id': App.question_id,
                                       'guess': App.guess,
                                       'playerId':App.playerId,
@@ -437,7 +482,7 @@ $(function() { // Module Format
                                     });
     },
     answerValidation(string, force = false){
-      const valid_units = {" ":1,"k":10**3,"m":10**6,"b":10**9,"t":10**12,"thousand":10**3,"million":10**6,"billion":10**9,"trillion":10**12,"quadrillion":10**12,"quintillion":10**15}
+      const valid_units = {" ":1,"k":10**3,"thousand":10**3,"m":10**6,"mm":10**6,"mil":10**6,"mill":10**6,"million":10**6,"bil":10**9,"bill":10**9,"billion":10**9,"b":10**9,"trillion":10**12,"t":10**12,"quadrillion":10**12,"quintillion":10**15}
       string = string.toLowerCase()
       string = string.replaceAll(/[^a-z\d\.]/g, '')
       let unit_re = /[a-z]+$/
@@ -471,11 +516,11 @@ $(function() { // Module Format
     submitFeedback(){
       const feedback = { 
                         'question_id':App.question_id,
-                        'user':App.user,
+                        'user':IO.user,
                         'mode':App.mode,
                         'guess':App.guess,
                         'feedback':App.feedback,
-                        'socket_id':IO.socket.id
+                        'session_id':IO.session_id
                         };
       console.log('Feedback: '+feedback)
       IO.socket.emit('submitFeedback',feedback);
@@ -496,13 +541,14 @@ $(function() { // Module Format
         App.submitAnswer();
       }
     },
+    // Routing
     // Client-side functions called from landing (mostly bound to buttons)
     Landing : {
       showRules : function(){
         App.$gameCover.html(App.$templateRules)
       },
       goPublic : function(){
-        IO.socket.emit('goPublic',{'socket_id':IO.socket.id})
+        IO.socket.emit('goPublic',{'session_id':IO.session_id})
       },
       hostGameMenu : function(){
         App.$gameCover.html(App.$templateHost)
@@ -522,10 +568,11 @@ $(function() { // Module Format
         }
       },
       hostGame : function(){
-        IO.socket.emit('hostGame', {'socket_id':IO.socket.id,'name':$('#host-name').val(),'question_number':$('#question-number').val(),'question_time':$('#question-time').val(),'score_mode':$('#scoreMode').val()})
+        console.log(IO.session_id)
+        IO.socket.emit('hostGame', {'session_id':IO.session_id,'name':$('#host-name').val(),'question_number':parseInt($('#question-number').val()),'question_time':parseInt($('#question-time').val()),'score_mode':$('#scoreMode').val()})
       },
       joinGame : function(){
-        IO.socket.emit('joinGame', {'socket_id':IO.socket.id,'game_socket_id':Cookies.getCookie('game_socket_id'),'name':$('#join-name').val(),'code':$('#join-code').val().toUpperCase()})
+        IO.socket.emit('joinGame', {'session_id':IO.session_id,'game_socket_id':Cookies.getCookie('game_socket_id'),'name':$('#join-name').val(),'code':$('#join-code').val().toUpperCase()})
       }
     },
     // Debug Mode Functions
@@ -535,16 +582,16 @@ $(function() { // Module Format
     // Game Mode Function
     Game : {
       startGame : function(){
-        IO.socket.emit('startGame',{'socket_id':IO.socket_id, 'code': App.code})
+        IO.socket.emit('startGame',{'session_id':IO.session_id, 'code': App.code})
       },
       option1 : function(){
-        IO.socket.emit('chooseOption',{'socket_id':IO.socket_id, 'code': App.code, 'option': 1})
+        IO.socket.emit('chooseOption',{'session_id':IO.session_id, 'code': App.code, 'option': 1})
       },
       option2 : function(){
-        IO.socket.emit('chooseOption',{'socket_id':IO.socket_id, 'code': App.code, 'option': 2})
+        IO.socket.emit('chooseOption',{'session_id':IO.session_id, 'code': App.code, 'option': 2})
       },
       option3 : function(){
-        IO.socket.emit('chooseOption',{'socket_id':IO.socket_id, 'code': App.code, 'option': 3})
+        IO.socket.emit('chooseOption',{'session_id':IO.session_id, 'code': App.code, 'option': 3})
       }
     }
   }

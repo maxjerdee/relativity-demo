@@ -54,7 +54,7 @@ block content
               .col#guess-text-col.l-370
                 p.input-label.l-370 Guess: 
               .col#input-col
-                input#guess-input(type="text")
+                input#guess-input(type="text" autocomplete="off")
               .col#show-answer-col.text-right
                 .button.blue-hoverable.deactivated#guess-button
                   p.button-text.l-650 Show Answer
@@ -90,7 +90,7 @@ block content
               .col-8
                 .row
                   .col
-                    p.button-text.m-0#room-text 
+                    p.button-text.m-0#code-text 
                       //- Room: ABCD
                 .row
                   .col
@@ -189,7 +189,7 @@ block content
       p#question-text Loading Question...
       .row#guess-row
         .col#input-col-guessing
-          input#guess-input(type="text")
+          input#guess-input(type="text" autocomplete="off")
         .col#show-answer-col.text-right
           .button.blue-hoverable.deactivated#guess-button
             p.button-text Guess
@@ -267,6 +267,7 @@ block content
             option(value='normal') Normal
             option(value='closest') Closest
             option(value='under') Under
+            option(value='confidence') Confidence
         .game-button.green-hoverable#host-game
           p.game-button-text Host Game
         p#error-message 
@@ -277,7 +278,7 @@ block content
         .input-group.mb-3
           .input-group-prepend
             .input-group-text Code
-          input.form-control.text-right#join-code(aria-label='Code')
+          input.form-control.text-right#join-code(aria-label='Code' autocomplete='off')
         .input-group.mb-3
           .input-group-prepend
             .input-group-text Name
