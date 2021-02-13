@@ -188,12 +188,6 @@ block content
           p.question-header#timer Time: 
       p#question-text Loading Question...
       .row#guess-row
-        .col#input-col-guessing
-          input#guess-input(type="text" autocomplete="off")
-        .col#show-answer-col.text-right
-          .button.blue-hoverable.deactivated#guess-button
-            p.button-text Guess
-          p.input-label#score 
       .row#feedback-row.text-center
         #feedback-wrapper
           .button.fast-button.blue-hoverable#like-button
@@ -202,6 +196,26 @@ block content
             p.button-text Dislike
           .button.fast-button.blue-hoverable#report-button
             p.button-text Report
+  //- SINGLE GUESSING
+  script#template-single-guessing(type="text/template")
+    .col#input-col-guessing
+      input#guess-input(type="text" autocomplete="off")
+    .col#show-answer-col.text-right
+      .button.blue-hoverable.deactivated#guess-button
+        p.button-text Guess
+      p.input-label#score 
+  //- DOUBLE GUESSING
+  script#template-double-guessing(type="text/template")
+    .col#input-col-guessing1
+      input#guess-input1(type="text" autocomplete="off")
+    .col#to-text 
+      p.button-text to
+    .col#input-col-guessing2 
+      input#guess-input2(type="text" autocomplete="off")
+    .col#show-answer-col.text-right
+      .button.blue-hoverable.deactivated#guess-button
+        p.button-text Guess
+      p.input-label#score 
   //- GAME OVER
   script#game-over(type="text/template")
     .random-question.blue

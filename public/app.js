@@ -132,22 +132,12 @@ $(function() { // Module Format
      * @param {*} gameState 
      */
     updateGameState : function(gameState){
+      console.log(gameState.scoreMode)
       IO.updatePlayerState(gameState)
       App.playerRole = gameState.players[App.playerId].role
       App.gamePhase = gameState.gamePhase;
       App.maxTime = gameState.maxTime;
       $('#code-text').html('Code: ' + gameState.code)
-      switch(gameState.scoreMode){
-        case 'normal':
-          $('#mode-text').html('Mode: Normal')
-          break
-        case 'closest':
-          $('#mode-text').html('Mode: Closest')
-          break
-        case 'under':
-          $('#mode-text').html('Mode: Under')
-          break
-      }
       switch(gameState.gamePhase){
         case 'waiting':
           if(App.playerRole=='host'){
@@ -177,6 +167,26 @@ $(function() { // Module Format
                 $('#guess').hide()
             }
             break;
+      }
+      switch(gameState.scoreMode){ // Score Mode Specific Pieces
+        case 'normal':
+          $('#mode-text').html('Mode: Normal')
+          console.log($('#guess-row').html())
+          console.log(App.$templateSingleGuessing)
+          $('#guess-row').html(App.$templateSingleGuessing)
+          break
+        case 'closest':
+          $('#mode-text').html('Mode: Closest')
+          $('#guess-row').html(App.$templateSingleGuessing)
+          break
+        case 'under': 
+          $('#mode-text').html('Mode: Under')
+          $('#guess-row').html(App.$templateSingleGuessing)
+          break
+        case 'confidence':
+          $('#mode-text').html('Mode: Confidence')
+          $('#guess-row').html(App.$templateDoubleGuessing)
+          break
       }
     },
     updatePlayerStateWrapper : function(data){ 
@@ -283,6 +293,8 @@ $(function() { // Module Format
       App.$templateDebug = $('#template-debug').html();
       App.$templateGame = $('#template-game').html();
       App.$templateGuessing = $('#template-guessing').html();
+      App.$templateSingleGuessing = $('#template-single-guessing').html();
+      App.$templateDoubleGuessing = $('#template-double-guessing').html();
       App.$templateWaitingHost = $('#template-waiting-host').html();
       App.$templateWaitingPlayer = $('#template-waiting-player').html();
       App.$templateChoosing = $('#template-choosing').html();
@@ -354,7 +366,7 @@ $(function() { // Module Format
       App.$doc.on('click', '#dislike-button', App.dislike);
       App.$doc.on('click', '#report-button', App.report);
       App.$doc.on('click', '#guess-button', App.clickHandler);
-      App.$doc.on('keyup', '#guess-input', App.inputHandler);
+      App.$doc.on('keyup input, '#guess-input', App.inputHandler);
       // Landing Page 
       App.$doc.on('click', '#show-rules-button', App.Landing.showRules);
       App.$doc.on('click', '#public-game-button', App.Landing.goPublic);
