@@ -366,7 +366,7 @@ $(function() { // Module Format
       App.$doc.on('click', '#dislike-button', App.dislike);
       App.$doc.on('click', '#report-button', App.report);
       App.$doc.on('click', '#guess-button', App.clickHandler);
-      App.$doc.on('keyup input, '#guess-input', App.inputHandler);
+      App.$doc.on('keyup input', '#guess-input', App.inputHandler);
       // Landing Page 
       App.$doc.on('click', '#show-rules-button', App.Landing.showRules);
       App.$doc.on('click', '#public-game-button', App.Landing.goPublic);
