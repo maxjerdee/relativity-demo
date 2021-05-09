@@ -419,6 +419,7 @@ $(function() { // Module Format
      * @param {*} question 
      */
     displayQuestion : function(question){
+      console.log(`Displaying ${question.title}`)
       App.question_id = question._id
       $('#guess-input').val('');
       $('#guess-input').prop('disabled',false)

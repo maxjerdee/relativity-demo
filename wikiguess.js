@@ -516,7 +516,7 @@ async function advanceGamePhase(code,option=1){
     printRooms()
   }
 }
-function calculateScore(code){
+function calculateScore(code){ 
   const POINT_DISTRIBUTION = [1,2,4,6,9,12,16,20,25,30]
   const answer = gameData[code].question.num_answer
   var diffs = new Array(gameData[code].players.length);
