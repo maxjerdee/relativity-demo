@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+      "module": "commonjs",
+      "outDir": "dist",
+      "target": "es2017",
+      "isolatedModules": false,
+      "noEmit": false,
+      "lib": ["dom", "dom.iterable", "esnext"],
+      "allowJs": true,
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "noImplicitAny": false
+    },
+    "include": ["./server/**/*.ts"],
+    "exclude": ["./server/Wiki.ts"]
+  }

@@ -1,0 +1,28 @@
+{
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "overrides": [
+        {
+            "files": [ "./server/**/*.ts" ],
+            "env": {
+                "browser": true,
+                "es2021": true
+            },
+            "parserOptions": {
+                "ecmaVersion": 12,
+                "sourceType": "module"
+            },
+            "extends": [
+                //"eslint:recommended",
+                "plugin:@typescript-eslint/recommended"
+            ],
+            "rules": {
+                //"indent": ["warn", 2, { "SwitchCase": 1 }],
+                "semi": ["warn", "always"],
+                "quotes": ["warn", "single"]
+            }
+        }
+    ]
+}

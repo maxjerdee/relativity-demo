@@ -20,7 +20,7 @@ wikiguess.js can be thought of as the server logic. It connects to the Mongo dat
 
 The game state is contained in the json gameData in wikiguess.js
     on the first level is a 4 digit code (ex. ABCD) for multiplayer Lobbies
-    or the IP/socket_id for single-player modes
+    or the IP/socketId for single-player modes
 
 gameData
     'CODE' (= 'ABCD')
